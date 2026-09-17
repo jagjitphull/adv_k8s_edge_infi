@@ -1,0 +1,1512 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kubernetes Identity &amp; Access — Reference &amp; Labs</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+:root{
+  --bg:#eef2f7;
+  --surface:#ffffff;
+  --surface-2:#f5f8fb;
+  --ink:#182233;
+  --ink-soft:#57647a;
+  --ink-faint:#8493a8;
+  --border:#dbe3ee;
+  --blue:#2c5fe0;
+  --blue-soft:#e8eefd;
+  --green:#1e9e6b;
+  --green-soft:#e5f7ef;
+  --amber:#c07a0a;
+  --amber-soft:#fbf0dd;
+  --red:#d13b46;
+  --red-soft:#fdeaec;
+  --code-bg:#111a2b;
+  --code-ink:#d9e4f6;
+  --code-accent:#7fb2ff;
+  --radius:14px;
+  --shadow-1:0 1px 2px rgba(24,34,51,.06), 0 1px 1px rgba(24,34,51,.04);
+  --shadow-2:0 10px 24px -12px rgba(24,34,51,.22), 0 2px 6px rgba(24,34,51,.08);
+  --shadow-3:0 24px 48px -20px rgba(24,34,51,.32), 0 4px 10px rgba(24,34,51,.10);
+}
+
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{
+  margin:0;
+  background:var(--bg);
+  color:var(--ink);
+  font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  line-height:1.6;
+  -webkit-font-smoothing:antialiased;
+}
+h1,h2,h3,h4{
+  font-family:'Space Grotesk','Inter',sans-serif;
+  font-weight:600;
+  color:var(--ink);
+  line-height:1.25;
+  margin:0 0 .5em 0;
+}
+p{margin:0 0 1em 0; max-width:74ch; color:var(--ink-soft);}
+a{color:var(--blue);}
+code, pre, .mono{font-family:'JetBrains Mono',ui-monospace,Menlo,monospace;}
+::selection{background:var(--blue-soft); color:var(--ink);}
+@media (prefers-reduced-motion: reduce){
+  *{animation-duration:.001ms !important; animation-iteration-count:1 !important; transition-duration:.001ms !important; scroll-behavior:auto !important;}
+}
+
+/* ---------- layout shell ---------- */
+.shell{display:flex; max-width:1440px; margin:0 auto;}
+.sidebar{
+  width:280px; flex-shrink:0; position:sticky; top:0; align-self:flex-start;
+  height:100vh; overflow-y:auto; padding:28px 18px 40px 24px;
+  border-right:1px solid var(--border);
+}
+.sidebar::-webkit-scrollbar{width:6px;}
+.sidebar::-webkit-scrollbar-thumb{background:#c7d3e2; border-radius:6px;}
+.brand{display:flex; align-items:center; gap:10px; margin-bottom:22px;}
+.brand-mark{
+  width:34px;height:34px;border-radius:9px;flex-shrink:0;
+  background:linear-gradient(155deg,var(--blue),#1a3fae);
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:var(--shadow-1);
+}
+.brand-mark svg{width:18px;height:18px;}
+.brand-text{font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:.92rem; letter-spacing:.01em;}
+.brand-text small{display:block; font-family:'Inter',sans-serif; font-weight:500; color:var(--ink-faint); font-size:.72rem; margin-top:1px;}
+
+.navgroup{margin-bottom:6px;}
+.navgroup-label{font-size:.7rem; font-weight:600; color:var(--ink-faint); margin:18px 0 6px 10px; text-transform:none;}
+.navlink{
+  display:flex; align-items:center; gap:9px;
+  padding:7px 10px; border-radius:8px; font-size:.845rem; color:var(--ink-soft);
+  text-decoration:none; font-weight:500; transition:background .15s,color .15s;
+  border-left:2px solid transparent;
+}
+.navlink:hover{background:var(--surface-2); color:var(--ink);}
+.navlink.active{background:var(--blue-soft); color:var(--blue); border-left-color:var(--blue);}
+.navlink .dot{width:5px;height:5px;border-radius:50%;background:currentColor;opacity:.55; flex-shrink:0;}
+
+.sidebar-toggle{display:none;}
+
+main{flex:1; min-width:0; padding:0;}
+
+/* ---------- hero ---------- */
+.hero{
+  padding:64px 56px 52px 56px; border-bottom:1px solid var(--border);
+  background:
+    radial-gradient(680px 320px at 82% -10%, rgba(44,95,224,.10), transparent 60%),
+    var(--surface);
+}
+.hero-eyebrow{
+  display:inline-flex; align-items:center; gap:7px;
+  font-size:.78rem; font-weight:600; color:var(--blue);
+  background:var(--blue-soft); padding:5px 12px 5px 10px; border-radius:100px; margin-bottom:18px;
+}
+.hero h1{font-size:2.45rem; max-width:16ch; letter-spacing:-.01em;}
+.hero .lede{font-size:1.08rem; max-width:62ch; color:var(--ink-soft);}
+.hero-meta{display:flex; gap:22px; margin-top:22px; flex-wrap:wrap;}
+.hero-meta-item{display:flex; flex-direction:column; gap:2px;}
+.hero-meta-item .k{font-size:.72rem; color:var(--ink-faint); font-weight:600;}
+.hero-meta-item .v{font-size:.88rem; font-weight:600; color:var(--ink);}
+
+/* hero diagram */
+.hero-diagram{margin-top:40px; background:var(--surface-2); border:1px solid var(--border); border-radius:var(--radius); padding:28px 24px 20px; box-shadow:var(--shadow-1);}
+.hero-diagram svg{width:100%; height:auto; display:block; overflow:visible;}
+.hd-badge{filter:drop-shadow(0 8px 14px rgba(24,34,51,.14));}
+.hd-caption{font-size:.78rem; color:var(--ink-faint); text-align:center; margin-top:10px;}
+
+/* ---------- content sections ---------- */
+section.content-section{padding:52px 56px; border-bottom:1px solid var(--border); scroll-margin-top:16px;}
+section.content-section:last-of-type{border-bottom:none;}
+.section-kicker{font-size:.76rem; font-weight:700; color:var(--blue); letter-spacing:.02em; margin-bottom:8px;}
+.section-title{font-size:1.7rem; margin-bottom:10px;}
+.section-intro{font-size:1rem; max-width:70ch; margin-bottom:28px;}
+
+.reveal{opacity:0; transform:translateY(14px); transition:opacity .55s ease, transform .55s ease;}
+.reveal.in-view{opacity:1; transform:translateY(0);}
+
+/* concept cards */
+.grid{display:grid; gap:16px;}
+.grid-2{grid-template-columns:repeat(2,1fr);}
+.grid-3{grid-template-columns:repeat(3,1fr);}
+@media (max-width:920px){.grid-2,.grid-3{grid-template-columns:1fr;}}
+
+.card{
+  background:var(--surface); border:1px solid var(--border); border-radius:var(--radius);
+  padding:20px 22px; box-shadow:var(--shadow-1);
+}
+.card h4{font-size:.98rem; margin-bottom:6px;}
+.card p{font-size:.9rem; margin-bottom:0;}
+.card .tag{display:inline-block; font-size:.68rem; font-weight:700; letter-spacing:.02em; color:var(--ink-faint); margin-bottom:10px;}
+
+/* tilt badge cards (identity vs serviceaccount) */
+.badge-row{display:grid; grid-template-columns:1fr 1fr; gap:22px; margin:26px 0;}
+@media (max-width:820px){.badge-row{grid-template-columns:1fr;}}
+.badge-card{
+  perspective:900px;
+}
+.badge-inner{
+  background:var(--surface); border:1px solid var(--border); border-radius:16px;
+  padding:24px; box-shadow:var(--shadow-2); transition:transform .12s ease, box-shadow .2s ease;
+  transform-style:preserve-3d; will-change:transform;
+}
+.badge-inner:hover{box-shadow:var(--shadow-3);}
+.badge-top{display:flex; align-items:center; gap:12px; margin-bottom:14px;}
+.badge-icon{width:42px;height:42px;border-radius:11px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.badge-icon.blue{background:var(--blue-soft);}
+.badge-icon.green{background:var(--green-soft);}
+.badge-icon svg{width:22px;height:22px;}
+.badge-top h3{font-size:1.08rem; margin:0;}
+.badge-top .sub{font-size:.78rem; color:var(--ink-faint); font-weight:600;}
+.badge-list{list-style:none; margin:0; padding:0; font-size:.87rem; color:var(--ink-soft);}
+.badge-list li{display:flex; gap:8px; padding:7px 0; border-top:1px dashed var(--border);}
+.badge-list li:first-child{border-top:none;}
+.badge-list b{color:var(--ink); font-weight:600; flex-shrink:0; min-width:112px;}
+
+/* comparison table */
+.table-wrap{overflow-x:auto; border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow-1);}
+table{width:100%; border-collapse:collapse; font-size:.88rem; background:var(--surface);}
+th,td{text-align:left; padding:12px 16px; border-bottom:1px solid var(--border); vertical-align:top;}
+th{background:var(--surface-2); font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:.82rem;}
+tr:last-child td{border-bottom:none;}
+td.dim{color:var(--ink-faint);}
+
+/* callouts */
+.callout{border-radius:var(--radius); padding:16px 18px; margin:18px 0; border:1px solid; display:flex; gap:12px;}
+.callout .ico{flex-shrink:0; width:20px; height:20px; margin-top:1px;}
+.callout p{margin:0; font-size:.89rem;}
+.callout p + p{margin-top:6px;}
+.callout strong{color:var(--ink);}
+.callout.risk{background:var(--red-soft); border-color:#f3c6ca; color:#8a232c;}
+.callout.risk p{color:#8a232c;}
+.callout.good{background:var(--green-soft); border-color:#bfe7d5; color:#146648;}
+.callout.good p{color:#146648;}
+.callout.note{background:var(--blue-soft); border-color:#c5d6fb; color:#1c3f9c;}
+.callout.note p{color:#1c3f9c;}
+
+/* code / cmd blocks */
+.cmd-block{position:relative; background:var(--code-bg); border-radius:12px; margin:16px 0; overflow:hidden; box-shadow:var(--shadow-2);}
+.cmd-block .cmd-label{display:flex; align-items:center; justify-content:space-between; padding:9px 14px; background:rgba(255,255,255,.04); border-bottom:1px solid rgba(255,255,255,.08);}
+.cmd-block .cmd-label span{font-size:.72rem; color:#8fa3c9; font-weight:600; letter-spacing:.02em;}
+.copy-btn{
+  background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.14); color:#cfe0ff;
+  font-size:.72rem; font-weight:600; padding:4px 10px; border-radius:7px; cursor:pointer;
+  display:flex; align-items:center; gap:6px; transition:background .15s;
+}
+.copy-btn:hover{background:rgba(255,255,255,.16);}
+.copy-btn svg{width:12px;height:12px;}
+.cmd-block pre{margin:0; padding:14px 16px 16px; overflow-x:auto; font-size:.83rem; color:var(--code-ink); line-height:1.65;}
+.cmd-block pre .c1{color:#7fd8a6;}
+.cmd-block pre .c2{color:#8fa3c9;}
+.cmd-block pre .c3{color:var(--code-accent);}
+
+.expected{border:1px dashed var(--border); background:var(--surface-2); border-radius:12px; padding:12px 16px; margin:14px 0;}
+.expected .k{font-size:.72rem; font-weight:700; color:var(--ink-faint); letter-spacing:.03em; margin-bottom:6px;}
+.expected pre{margin:0; font-size:.8rem; color:var(--ink-soft); white-space:pre-wrap; background:none;}
+
+/* diagram frame */
+.diagram-frame{background:var(--surface-2); border:1px solid var(--border); border-radius:var(--radius); padding:22px; margin:22px 0; box-shadow:var(--shadow-1);}
+.diagram-frame svg{width:100%; height:auto; display:block; overflow:visible;}
+.diagram-frame .cap{font-size:.78rem; color:var(--ink-faint); margin-top:10px; text-align:center;}
+
+/* jwt decoder tool */
+.tool{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:22px; box-shadow:var(--shadow-2); margin:22px 0;}
+.tool-head{display:flex; align-items:center; gap:10px; margin-bottom:4px;}
+.tool-head .pill{background:var(--green-soft); color:#146648; font-size:.68rem; font-weight:700; padding:3px 9px; border-radius:100px;}
+.tool textarea{
+  width:100%; min-height:78px; margin-top:12px; padding:12px 14px; border-radius:10px;
+  border:1px solid var(--border); font-family:'JetBrains Mono',monospace; font-size:.78rem;
+  background:var(--code-bg); color:var(--code-ink); resize:vertical;
+}
+.tool-out{display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:14px;}
+@media (max-width:720px){.tool-out{grid-template-columns:1fr;}}
+.tool-out .box{background:var(--code-bg); border-radius:10px; padding:12px 14px;}
+.tool-out .box .lbl{font-size:.68rem; font-weight:700; color:#8fa3c9; letter-spacing:.02em; margin-bottom:6px;}
+.tool-out pre{margin:0; font-size:.76rem; color:var(--code-ink); white-space:pre-wrap; word-break:break-all;}
+.tool-hint{font-size:.78rem; color:var(--ink-faint); margin-top:10px;}
+
+/* labs */
+.labs-hero{padding:52px 56px 8px;}
+.lab-card{
+  background:var(--surface); border:1px solid var(--border); border-radius:16px;
+  margin:24px 0; box-shadow:var(--shadow-2); overflow:hidden;
+}
+.lab-head{padding:22px 26px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:flex-start; gap:16px; flex-wrap:wrap;}
+.lab-head h3{font-size:1.18rem; margin-bottom:4px;}
+.lab-head .lab-goal{font-size:.88rem; color:var(--ink-soft); margin:0; max-width:60ch;}
+.lab-meta{display:flex; gap:8px; flex-shrink:0; flex-wrap:wrap;}
+.pill-diff{font-size:.7rem; font-weight:700; padding:4px 10px; border-radius:100px; white-space:nowrap;}
+.pill-diff.intro{background:var(--green-soft); color:#146648;}
+.pill-diff.core{background:var(--blue-soft); color:#1c3f9c;}
+.pill-diff.adv{background:var(--amber-soft); color:#8a5a08;}
+.pill-time{background:var(--surface-2); color:var(--ink-faint); font-size:.7rem; font-weight:600; padding:4px 10px; border-radius:100px; border:1px solid var(--border); white-space:nowrap;}
+
+.prereq{margin:20px 26px 0; background:var(--amber-soft); border:1px solid #edd6a8; border-radius:10px; padding:12px 16px; font-size:.85rem; color:#7a5106;}
+.prereq b{color:#5c3d04;}
+
+.lab-body{padding:6px 26px 26px;}
+.step{margin-top:24px;}
+.step-head{display:flex; align-items:center; gap:10px; margin-bottom:8px;}
+.step-num{
+  width:24px;height:24px;border-radius:7px;background:var(--blue); color:#fff;
+  font-size:.76rem; font-weight:700; display:flex; align-items:center; justify-content:center; flex-shrink:0;
+}
+.step-head h4{font-size:.96rem; margin:0;}
+.step-desc{font-size:.88rem; margin:0 0 8px 34px; max-width:66ch;}
+.step > .cmd-block, .step > .expected, .step > .callout{margin-left:34px;}
+@media (max-width:640px){.step-desc,.step > .cmd-block, .step > .expected, .step > .callout{margin-left:0;}}
+
+.verify{margin-top:22px; background:var(--green-soft); border:1px solid #bfe7d5; border-radius:12px; padding:16px 18px;}
+.verify h5{font-size:.86rem; color:#146648; margin:0 0 8px 0; font-family:'Space Grotesk',sans-serif; font-weight:700;}
+.verify ul{margin:0; padding-left:18px; font-size:.86rem; color:#146648;}
+.verify li{margin-bottom:4px;}
+
+/* footer / back to top */
+.footer{padding:40px 56px 60px; color:var(--ink-faint); font-size:.82rem;}
+.back-top{
+  position:fixed; right:26px; bottom:26px; width:44px; height:44px; border-radius:50%;
+  background:var(--ink); color:#fff; border:none; display:flex; align-items:center; justify-content:center;
+  cursor:pointer; box-shadow:var(--shadow-3); opacity:0; pointer-events:none; transition:opacity .2s, transform .15s;
+  z-index:40;
+}
+.back-top.show{opacity:1; pointer-events:auto;}
+.back-top:hover{transform:translateY(-2px);}
+.back-top svg{width:18px;height:18px;}
+
+@media (max-width:980px){
+  .sidebar{position:fixed; left:0; top:0; z-index:50; transform:translateX(-100%); transition:transform .2s; background:var(--bg); width:78vw; max-width:300px; box-shadow:var(--shadow-3);}
+  .sidebar.open{transform:translateX(0);}
+  .sidebar-toggle{
+    display:flex; position:fixed; left:16px; top:16px; z-index:60; width:42px; height:42px; border-radius:11px;
+    background:var(--ink); color:#fff; border:none; align-items:center; justify-content:center; box-shadow:var(--shadow-2); cursor:pointer;
+  }
+  .hero,.content-section,.labs-hero,.footer{padding-left:26px; padding-right:26px;}
+  .hero h1{font-size:1.9rem;}
+}
+</style>
+</head>
+<body>
+
+<button class="sidebar-toggle" id="sidebarToggle" aria-label="Toggle navigation">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16" stroke-linecap="round"/></svg>
+</button>
+
+<div class="shell">
+  <nav class="sidebar" id="sidebar">
+    <div class="brand">
+      <div class="brand-mark">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8"><path d="M12 2l8 4.5v9L12 20l-8-4.5v-9L12 2z" stroke-linejoin="round"/><path d="M12 2v18M4 6.5l8 4.5 8-4.5" stroke-linejoin="round"/></svg>
+      </div>
+      <div class="brand-text">Module 07<small>Identity &amp; Access</small></div>
+    </div>
+
+    <div class="navgroup">
+      <div class="navgroup-label">Orientation</div>
+      <a class="navlink" href="#hero-top"><span class="dot"></span>Overview</a>
+      <a class="navlink" href="#s-authn"><span class="dot"></span>Authentication overview</a>
+    </div>
+
+    <div class="navgroup">
+      <div class="navgroup-label">2.1 Users vs Service Accounts</div>
+      <a class="navlink" href="#s-users-vs-sa"><span class="dot"></span>Users vs ServiceAccounts</a>
+      <a class="navlink" href="#s-default-risk"><span class="dot"></span>Default SA &amp; security risk</a>
+    </div>
+
+    <div class="navgroup">
+      <div class="navgroup-label">2.2 Service Accounts In Depth</div>
+      <a class="navlink" href="#s-tokens"><span class="dot"></span>ServiceAccount tokens</a>
+      <a class="navlink" href="#s-pod-auth"><span class="dot"></span>Pod-to-API authentication</a>
+      <a class="navlink" href="#s-automount"><span class="dot"></span>Automount &amp; implications</a>
+      <a class="navlink" href="#s-per-workload"><span class="dot"></span>SA-per-workload practice</a>
+      <a class="navlink" href="#s-least-priv"><span class="dot"></span>Least-privilege access</a>
+    </div>
+
+    <div class="navgroup">
+      <div class="navgroup-label">Hands-on labs · 3-node kubeadm cluster</div>
+      <a class="navlink" href="#lab-1"><span class="dot"></span>Lab 1 · Default SA exposure</a>
+      <a class="navlink" href="#lab-2"><span class="dot"></span>Lab 2 · Dedicated SA + automount</a>
+      <a class="navlink" href="#lab-3"><span class="dot"></span>Lab 3 · Least-privilege RBAC</a>
+      <a class="navlink" href="#lab-4"><span class="dot"></span>Lab 4 · Bound vs legacy tokens</a>
+      <a class="navlink" href="#lab-5"><span class="dot"></span>Lab 5 · End-to-end + negative tests</a>
+    </div>
+  </nav>
+
+  <main>
+    <header class="hero" id="hero-top">
+      <div class="hero-eyebrow">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 2l8 4v6c0 5-3.4 8.4-8 10-4.6-1.6-8-5-8-10V6l8-4z"/></svg>
+        Module 2 · Kubernetes Identity &amp; Access
+      </div>
+      <h1>Who — or what — is allowed to talk to your cluster?</h1>
+      <p class="lede">Every request that reaches the Kubernetes API server — a human running <code>kubectl</code>, a controller, or a process inside a Pod — carries an identity. This module builds that identity model from the ground up: how the cluster tells identities apart, why the default identity every Pod gets is a real security liability, and how to hand each workload exactly the access it needs and nothing more.</p>
+      <div class="hero-meta">
+        <div class="hero-meta-item"><span class="k">Target environment</span><span class="v">3-node kubeadm cluster</span></div>
+        <div class="hero-meta-item"><span class="k">Format</span><span class="v">8 concept sections + 5 labs</span></div>
+        <div class="hero-meta-item"><span class="k">Estimated time</span><span class="v">~2 hours</span></div>
+        <div class="hero-meta-item"><span class="k">Prerequisites</span><span class="v">kubectl configured, cluster-admin context</span></div>
+      </div>
+
+      <div class="hero-diagram reveal">
+        <svg viewBox="0 0 920 260" xmlns="http://www.w3.org/2000/svg" id="heroSvg">
+          <defs>
+            <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M0 0L10 5L0 10z" fill="#9fb3d1"/>
+            </marker>
+          </defs>
+
+          <!-- user badge -->
+          <g class="hd-badge" transform="translate(20,30)">
+            <rect width="150" height="86" rx="14" fill="#ffffff" stroke="#dbe3ee"/>
+            <circle cx="30" cy="34" r="14" fill="#e8eefd"/>
+            <path d="M30 28a6 6 0 100 12 6 6 0 000-12zM19 46c2-5 7-7 11-7s9 2 11 7" stroke="#2c5fe0" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+            <text x="52" y="30" font-family="Space Grotesk" font-size="12.5" font-weight="600" fill="#182233">Human User</text>
+            <text x="52" y="46" font-family="Inter" font-size="9.5" fill="#8493a8">kubeconfig + x509 cert</text>
+            <text x="18" y="70" font-family="Inter" font-size="9" fill="#57647a">External identity — no</text>
+            <text x="18" y="80" font-family="Inter" font-size="9" fill="#57647a">User object in etcd</text>
+          </g>
+
+          <!-- pod badge -->
+          <g class="hd-badge" transform="translate(20,150)">
+            <rect width="150" height="86" rx="14" fill="#ffffff" stroke="#dbe3ee"/>
+            <rect x="16" y="20" width="28" height="28" rx="7" fill="#e5f7ef"/>
+            <path d="M22 34l6 6 12-14" stroke="#1e9e6b" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+            <text x="52" y="30" font-family="Space Grotesk" font-size="12.5" font-weight="600" fill="#182233">Pod / Workload</text>
+            <text x="52" y="46" font-family="Inter" font-size="9.5" fill="#8493a8">ServiceAccount + bound token</text>
+            <text x="18" y="70" font-family="Inter" font-size="9" fill="#57647a">In-cluster identity — is a</text>
+            <text x="18" y="80" font-family="Inter" font-size="9" fill="#57647a">real API object</text>
+          </g>
+
+          <!-- connecting lines -->
+          <path d="M170 73 L 330 73 L 400 130" stroke="#9fb3d1" stroke-width="1.6" fill="none" marker-end="url(#arrow)"/>
+          <path d="M170 193 L 330 193 L 400 138" stroke="#9fb3d1" stroke-width="1.6" fill="none" marker-end="url(#arrow)"/>
+
+          <!-- pipeline -->
+          <g transform="translate(410,66)">
+            <rect width="330" height="128" rx="16" fill="#f5f8fb" stroke="#dbe3ee"/>
+            <text x="165" y="-10" text-anchor="middle" font-family="Space Grotesk" font-size="11.5" font-weight="600" fill="#182233">kube-apiserver request pipeline</text>
+
+            <g id="stageAuthn">
+              <rect x="16" y="20" width="94" height="88" rx="10" fill="#ffffff" stroke="#dbe3ee"/>
+              <circle cx="63" cy="42" r="10" fill="#e8eefd" class="pulse" style="animation-delay:0s"/>
+              <text x="63" y="66" text-anchor="middle" font-family="Inter" font-weight="600" font-size="9.5" fill="#182233">Authn</text>
+              <text x="63" y="80" text-anchor="middle" font-family="Inter" font-size="8" fill="#8493a8">who are</text>
+              <text x="63" y="90" text-anchor="middle" font-family="Inter" font-size="8" fill="#8493a8">you?</text>
+            </g>
+            <g id="stageAuthz">
+              <rect x="118" y="20" width="94" height="88" rx="10" fill="#ffffff" stroke="#dbe3ee"/>
+              <circle cx="165" cy="42" r="10" fill="#e8eefd" class="pulse" style="animation-delay:.8s"/>
+              <text x="165" y="66" text-anchor="middle" font-family="Inter" font-weight="600" font-size="9.5" fill="#182233">Authz</text>
+              <text x="165" y="80" text-anchor="middle" font-family="Inter" font-size="8" fill="#8493a8">RBAC — allowed</text>
+              <text x="165" y="90" text-anchor="middle" font-family="Inter" font-size="8" fill="#8493a8">to do this?</text>
+            </g>
+            <g id="stageAdmit">
+              <rect x="220" y="20" width="94" height="88" rx="10" fill="#ffffff" stroke="#dbe3ee"/>
+              <circle cx="267" cy="42" r="10" fill="#e8eefd" class="pulse" style="animation-delay:1.6s"/>
+              <text x="267" y="66" text-anchor="middle" font-family="Inter" font-weight="600" font-size="9.5" fill="#182233">Admission</text>
+              <text x="267" y="80" text-anchor="middle" font-family="Inter" font-size="8" fill="#8493a8">mutate /</text>
+              <text x="267" y="90" text-anchor="middle" font-family="Inter" font-size="8" fill="#8493a8">validate</text>
+            </g>
+          </g>
+
+          <path d="M740 130 L 800 130" stroke="#9fb3d1" stroke-width="1.6" fill="none" marker-end="url(#arrow)"/>
+          <g transform="translate(800,98)">
+            <rect width="100" height="64" rx="12" fill="#182233"/>
+            <text x="50" y="30" text-anchor="middle" font-family="Space Grotesk" font-size="11" font-weight="600" fill="#ffffff">etcd</text>
+            <text x="50" y="44" text-anchor="middle" font-family="Inter" font-size="8" fill="#8fa3c9">cluster state</text>
+          </g>
+        </svg>
+        <div class="hd-caption">Every request — human or Pod — passes through the same three gates before it ever touches cluster state.</div>
+      </div>
+    </header>
+
+    <!-- ================= AUTHN OVERVIEW ================= -->
+    <section class="content-section reveal" id="s-authn">
+      <div class="section-kicker">Orientation</div>
+      <h2 class="section-title">Kubernetes authentication, at a glance</h2>
+      <p class="section-intro">The API server doesn't maintain a login system. Instead it delegates the question "who is this?" to a chain of pluggable authenticator modules, then hands the result to authorization and admission control. Nothing gets into etcd without clearing all three gates.</p>
+
+      <div class="grid grid-3">
+        <div class="card">
+          <span class="tag" style="color:#2c5fe0;">STAGE 1</span>
+          <h4>Authentication</h4>
+          <p>Identifies the caller. Methods include x509 client certificates, bearer tokens (ServiceAccount tokens, OIDC), and webhook authenticators. Produces a username and group list — or rejects the request outright (401).</p>
+        </div>
+        <div class="card">
+          <span class="tag" style="color:#1e9e6b;">STAGE 2</span>
+          <h4>Authorization</h4>
+          <p>Decides if that identity may perform this verb on this resource. RBAC is the default and near-universal mechanism in modern clusters. A clean pass here is required, or the request is denied (403).</p>
+        </div>
+        <div class="card">
+          <span class="tag" style="color:#c07a0a;">STAGE 3</span>
+          <h4>Admission control</h4>
+          <p>Mutating and validating webhooks/plugins get a last look — injecting defaults, enforcing policy — before the object is ever persisted. Out of scope for this module, but it's why "authorized" isn't always "accepted."</p>
+        </div>
+      </div>
+
+      <div class="callout note">
+        <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg>
+        <p><strong>Real-world framing:</strong> a CI/CD runner deploying a Helm chart, a Prometheus Pod scraping metrics via the API, and you running <code>kubectl get pods</code> from your laptop all hit the exact same pipeline. The cluster doesn't have a special case for "automated" traffic — it just has identities with different scopes of access.</p>
+      </div>
+    </section>
+
+    <!-- ================= 2.1 USERS VS SA ================= -->
+    <section class="content-section reveal" id="s-users-vs-sa">
+      <div class="section-kicker">2.1 · Users vs Service Accounts</div>
+      <h2 class="section-title">Users vs ServiceAccounts</h2>
+      <p class="section-intro">Kubernetes recognizes two categories of identity for API requests, and only one of them is actually a Kubernetes object.</p>
+
+      <div class="badge-row">
+        <div class="badge-card">
+          <div class="badge-inner tilt">
+            <div class="badge-top">
+              <div class="badge-icon blue"><svg viewBox="0 0 24 24" fill="none" stroke="#2c5fe0" stroke-width="1.8"><circle cx="12" cy="8" r="4"/><path d="M4 20c1.5-4.5 5-7 8-7s6.5 2.5 8 7"/></svg></div>
+              <div><h3>Users</h3><div class="sub">External / human identity</div></div>
+            </div>
+            <ul class="badge-list">
+              <li><b>Object in etcd?</b> No — Kubernetes has no <code>User</code> API resource</li>
+              <li><b>Issued by</b> An external system: a CA, your cloud provider's IAM, or an OIDC/SSO provider</li>
+              <li><b>Presented as</b> An x509 cert (CN = username, O = groups) or an OIDC bearer token</li>
+              <li><b>Typical lifetime</b> Days to years — tied to cert/token expiry, not to anything in-cluster</li>
+              <li><b>Real-world use</b> Platform engineers running <code>kubectl</code>, admins using a dashboard, SSO-federated developer access</li>
+            </ul>
+          </div>
+        </div>
+        <div class="badge-card">
+          <div class="badge-inner tilt">
+            <div class="badge-top">
+              <div class="badge-icon green"><svg viewBox="0 0 24 24" fill="none" stroke="#1e9e6b" stroke-width="1.8"><rect x="3" y="8" width="18" height="12" rx="2"/><path d="M8 8V6a4 4 0 018 0v2"/></svg></div>
+              <div><h3>ServiceAccounts</h3><div class="sub">In-cluster / workload identity</div></div>
+            </div>
+            <ul class="badge-list">
+              <li><b>Object in etcd?</b> Yes — <code>kubectl get serviceaccounts</code> lists real, namespaced objects</li>
+              <li><b>Issued by</b> The cluster itself, via the ServiceAccount and TokenRequest controllers</li>
+              <li><b>Presented as</b> A signed JWT bearer token, automatically projected into the Pod's filesystem</li>
+              <li><b>Typical lifetime</b> Short — bound tokens default to ~1 hour and auto-rotate</li>
+              <li><b>Real-world use</b> A controller watching resources, a CI pipeline Pod deploying manifests, a sidecar calling the API</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Dimension</th><th>User</th><th>ServiceAccount</th></tr></thead>
+          <tbody>
+            <tr><td><b>Who it represents</b></td><td>A person, or a system external to the cluster</td><td>A process running inside a Pod</td></tr>
+            <tr><td><b>Managed with</b></td><td class="dim">kubeconfig, your IdP, cert tooling</td><td><code>kubectl create serviceaccount</code></td></tr>
+            <tr><td><b>Namespace-scoped?</b></td><td class="dim">No concept of namespace</td><td>Yes — a ServiceAccount belongs to one namespace</td></tr>
+            <tr><td><b>Granted access via</b></td><td>RoleBinding / ClusterRoleBinding to the username or group</td><td>RoleBinding / ClusterRoleBinding to the ServiceAccount subject</td></tr>
+            <tr><td><b>Credential rotation</b></td><td class="dim">Manual — reissue cert/token</td><td>Automatic — kubelet refreshes bound tokens</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ================= DEFAULT SA RISK ================= -->
+    <section class="content-section reveal" id="s-default-risk">
+      <div class="section-kicker">2.1 · Users vs Service Accounts</div>
+      <h2 class="section-title">Default ServiceAccount behavior — and why it's a risk</h2>
+      <p class="section-intro">Every namespace gets a ServiceAccount named <code>default</code> the moment it's created — nobody asks for it. Every Pod that doesn't explicitly request a different one is silently assigned it.</p>
+
+      <div class="diagram-frame reveal">
+        <svg viewBox="0 0 900 230" xmlns="http://www.w3.org/2000/svg">
+          <rect x="20" y="20" width="860" height="190" rx="14" fill="#ffffff" stroke="#dbe3ee" stroke-dasharray="5 5"/>
+          <text x="42" y="46" font-family="Space Grotesk" font-size="12" font-weight="600" fill="#182233">namespace: payments</text>
+
+          <g transform="translate(42,64)">
+            <rect width="150" height="46" rx="10" fill="#fdeaec" stroke="#f3c6ca"/>
+            <text x="75" y="20" text-anchor="middle" font-family="Inter" font-size="10" font-weight="600" fill="#8a232c">ServiceAccount</text>
+            <text x="75" y="34" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#8a232c">default</text>
+          </g>
+
+          <g id="riskFlow">
+            <path d="M120 110 C 120 150, 250 150, 250 110" stroke="#d13b46" stroke-width="1.6" fill="none" stroke-dasharray="4 4" marker-end="url(#arrow)"/>
+            <path d="M120 110 C 120 165, 470 165, 470 110" stroke="#d13b46" stroke-width="1.6" fill="none" stroke-dasharray="4 4" marker-end="url(#arrow)"/>
+            <path d="M120 110 C 120 180, 690 180, 690 110" stroke="#d13b46" stroke-width="1.6" fill="none" stroke-dasharray="4 4" marker-end="url(#arrow)"/>
+          </g>
+
+          <g transform="translate(215,64)">
+            <rect width="90" height="46" rx="10" fill="#f5f8fb" stroke="#dbe3ee"/>
+            <text x="45" y="19" text-anchor="middle" font-family="Inter" font-size="9.5" font-weight="600" fill="#182233">api Pod</text>
+            <text x="45" y="33" text-anchor="middle" font-family="Inter" font-size="8" fill="#8493a8">no SA set</text>
+          </g>
+          <g transform="translate(430,64)">
+            <rect width="90" height="46" rx="10" fill="#f5f8fb" stroke="#dbe3ee"/>
+            <text x="45" y="19" text-anchor="middle" font-family="Inter" font-size="9.5" font-weight="600" fill="#182233">worker Pod</text>
+            <text x="45" y="33" text-anchor="middle" font-family="Inter" font-size="8" fill="#8493a8">no SA set</text>
+          </g>
+          <g transform="translate(650,64)">
+            <rect width="90" height="46" rx="10" fill="#f5f8fb" stroke="#dbe3ee"/>
+            <text x="45" y="19" text-anchor="middle" font-family="Inter" font-size="9.5" font-weight="600" fill="#182233">debug Pod</text>
+            <text x="45" y="33" text-anchor="middle" font-family="Inter" font-size="8" fill="#8493a8">no SA set</text>
+          </g>
+
+          <text x="450" y="196" text-anchor="middle" font-family="Inter" font-size="9.5" fill="#8a232c">Every unlabeled Pod inherits the same credential — including future Pods nobody reviewed</text>
+        </svg>
+        <div class="cap">Implicit propagation: the <code>default</code> ServiceAccount is mounted into any Pod that doesn't specify one.</div>
+      </div>
+
+      <div class="grid grid-2">
+        <div class="card">
+          <h4>Where the risk actually comes from</h4>
+          <p>A brand-new <code>default</code> ServiceAccount has no RBAC bound to it, so on its own it can do almost nothing. The danger appears later — when someone binds a Role, ClusterRole, or (worse) <code>cluster-admin</code> to <code>default</code> for convenience, or to the <code>system:serviceaccounts</code> group as a whole.</p>
+        </div>
+        <div class="card">
+          <h4>Why it matters in practice</h4>
+          <p>If an application Pod is compromised — a dependency vulnerability, an SSRF bug, a leaked shell — the attacker inherits whatever the Pod's mounted token can do. If that token belongs to an over-privileged <code>default</code> SA, a single app bug becomes a path to the wider cluster.</p>
+        </div>
+      </div>
+
+      <div class="callout risk">
+        <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 21h20L12 2z"/><path d="M12 9v5M12 17h.01"/></svg>
+        <p><strong>This is a CIS Kubernetes Benchmark control for a reason.</strong> The recommended baseline is: never bind RBAC to a namespace's <code>default</code> ServiceAccount, disable its automount, and give every real workload its own narrowly-scoped identity instead. Lab 1 shows exactly what a compromised Pod can see using nothing but its default credential.</p>
+      </div>
+    </section>
+
+    <!-- ================= 2.2 TOKENS ================= -->
+    <section class="content-section reveal" id="s-tokens">
+      <div class="section-kicker">2.2 · Service Accounts — In Depth</div>
+      <h2 class="section-title">ServiceAccount tokens</h2>
+      <p class="section-intro">A ServiceAccount's credential is a signed JSON Web Token (JWT). Since Kubernetes 1.24, the projected, time-bound token is the default — a meaningful security upgrade over the long-lived tokens older clusters used.</p>
+
+      <div class="diagram-frame reveal">
+        <svg viewBox="0 0 880 150" xmlns="http://www.w3.org/2000/svg">
+          <g transform="translate(20,20)">
+            <rect width="230" height="100" rx="12" fill="#182233"/>
+            <text x="115" y="24" text-anchor="middle" font-family="Space Grotesk" font-size="11" font-weight="600" fill="#7fb2ff">HEADER</text>
+            <text x="115" y="48" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#d9e4f6">alg: RS256</text>
+            <text x="115" y="64" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#d9e4f6">kid: &lt;key id&gt;</text>
+            <text x="115" y="86" text-anchor="middle" font-family="Inter" font-size="8" fill="#8fa3c9">how it's signed</text>
+          </g>
+          <text x="258" y="78" font-family="Inter" font-size="16" fill="#8493a8">.</text>
+          <g transform="translate(275,10)">
+            <rect width="320" height="120" rx="12" fill="#182233"/>
+            <text x="160" y="24" text-anchor="middle" font-family="Space Grotesk" font-size="11" font-weight="600" fill="#7fd8a6">PAYLOAD</text>
+            <text x="160" y="46" text-anchor="middle" font-family="JetBrains Mono" font-size="8.6" fill="#d9e4f6">sub: system:serviceaccount:ns:name</text>
+            <text x="160" y="62" text-anchor="middle" font-family="JetBrains Mono" font-size="8.6" fill="#d9e4f6">aud: [https://kubernetes.default.svc]</text>
+            <text x="160" y="78" text-anchor="middle" font-family="JetBrains Mono" font-size="8.6" fill="#d9e4f6">exp: &lt;unix time, ~1hr out&gt;</text>
+            <text x="160" y="94" text-anchor="middle" font-family="JetBrains Mono" font-size="8.6" fill="#d9e4f6">kubernetes.io/pod.uid: &lt;uid&gt;</text>
+            <text x="160" y="112" text-anchor="middle" font-family="Inter" font-size="8" fill="#8fa3c9">who, for what, until when</text>
+          </g>
+          <text x="605" y="78" font-family="Inter" font-size="16" fill="#8493a8">.</text>
+          <g transform="translate(620,25)">
+            <rect width="230" height="90" rx="12" fill="#182233"/>
+            <text x="115" y="24" text-anchor="middle" font-family="Space Grotesk" font-size="11" font-weight="600" fill="#f2b8bd">SIGNATURE</text>
+            <text x="115" y="46" text-anchor="middle" font-family="Inter" font-size="8.6" fill="#d9e4f6">Proves the API server's</text>
+            <text x="115" y="60" text-anchor="middle" font-family="Inter" font-size="8.6" fill="#d9e4f6">signing key issued this —</text>
+            <text x="115" y="74" text-anchor="middle" font-family="Inter" font-size="8.6" fill="#d9e4f6">tampering invalidates it</text>
+          </g>
+        </svg>
+        <div class="cap">A ServiceAccount token is a standard JWT: three base64url segments joined by dots, anyone can read the middle segment — only the API server can verify the signature.</div>
+      </div>
+
+      <div class="grid grid-2">
+        <div class="card">
+          <span class="tag" style="color:#1e9e6b;">DEFAULT SINCE 1.24</span>
+          <h4>Bound / projected tokens</h4>
+          <p>Requested via the TokenRequest API, mounted as a projected volume by the kubelet. Carries an <code>aud</code> (audience) claim scoped to the API server, an <code>exp</code> claim (default ~1 hour), and can be tied to the specific Pod's UID — steal it, and it stops working once that Pod is gone.</p>
+        </div>
+        <div class="card">
+          <span class="tag" style="color:#d13b46;">LEGACY, PRE-1.24 DEFAULT</span>
+          <h4>Secret-backed tokens</h4>
+          <p>A <code>kubernetes.io/service-account-token</code> Secret auto-created per ServiceAccount, with no expiry at all. Still creatable manually for legacy integrations, but no longer the default — and every long-lived token is a standing liability sitting in etcd.</p>
+        </div>
+      </div>
+
+      <div class="tool">
+        <div class="tool-head"><h4 style="margin:0;">Try it — decode a token</h4><span class="pill">runs in your browser, nothing leaves this page</span></div>
+        <p style="font-size:.86rem; margin-top:6px;">Paste any ServiceAccount JWT (from Lab 1 or Lab 4) to see its header and payload. This performs a local base64url decode only — it does not verify the signature.</p>
+        <textarea id="jwtInput" placeholder="eyJhbGciOiJSUzI1NiIsImtpZCI6..."></textarea>
+        <div class="tool-out">
+          <div class="box"><div class="lbl">HEADER</div><pre id="jwtHeader">—</pre></div>
+          <div class="box"><div class="lbl">PAYLOAD</div><pre id="jwtPayload">—</pre></div>
+        </div>
+        <div class="tool-hint" id="jwtHint">Waiting for input…</div>
+      </div>
+    </section>
+
+    <!-- ================= POD-TO-API ================= -->
+    <section class="content-section reveal" id="s-pod-auth">
+      <div class="section-kicker">2.2 · Service Accounts — In Depth</div>
+      <h2 class="section-title">Pod-to-Kubernetes API authentication</h2>
+      <p class="section-intro">How does code inside a container actually become an authenticated API caller? The kubelet does the work before the container ever starts.</p>
+
+      <div class="grid grid-3">
+        <div class="card">
+          <span class="tag" style="color:#2c5fe0;">1 · MOUNT</span>
+          <h4>Projected volume</h4>
+          <p>The kubelet mounts <code>token</code>, <code>ca.crt</code>, and <code>namespace</code> at <code>/var/run/secrets/kubernetes.io/serviceaccount/</code> — no manifest changes needed, it's automatic for any Pod with a mounted SA.</p>
+        </div>
+        <div class="card">
+          <span class="tag" style="color:#2c5fe0;">2 · DISCOVER</span>
+          <h4>In-cluster config</h4>
+          <p>Client libraries (client-go, client-python, …) auto-detect these files plus <code>KUBERNETES_SERVICE_HOST</code>/<code>_PORT</code> env vars — no kubeconfig, no hardcoded endpoint.</p>
+        </div>
+        <div class="card">
+          <span class="tag" style="color:#2c5fe0;">3 · CALL</span>
+          <h4>Authenticated request</h4>
+          <p>The token is sent as <code>Authorization: Bearer &lt;token&gt;</code>, validated against <code>ca.crt</code> for TLS trust — the exact same pipeline a human's <code>kubectl</code> request goes through.</p>
+        </div>
+      </div>
+
+      <div class="callout note">
+        <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg>
+        <p><strong>Real-world use case:</strong> this is exactly how a Prometheus Pod discovers scrape targets via the API, how an Argo CD controller applies manifests, and how a Kubernetes Operator watches its custom resources — all without a single hardcoded credential in the container image.</p>
+      </div>
+    </section>
+
+    <!-- ================= AUTOMOUNT ================= -->
+    <section class="content-section reveal" id="s-automount">
+      <div class="section-kicker">2.2 · Service Accounts — In Depth</div>
+      <h2 class="section-title">Auto-mounting tokens and security implications</h2>
+      <p class="section-intro">Token projection is automatic by default — which is convenient for workloads that need it, and an unnecessary attack surface for the ones that don't.</p>
+
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Setting</th><th>Set at</th><th>Effect</th></tr></thead>
+          <tbody>
+            <tr><td><code>automountServiceAccountToken: false</code></td><td>ServiceAccount</td><td>No Pod using this SA gets a token mounted, unless a Pod overrides it explicitly</td></tr>
+            <tr><td><code>automountServiceAccountToken: true</code></td><td>Pod <code>spec</code></td><td>Overrides the ServiceAccount setting — this specific Pod gets a token regardless</td></tr>
+            <tr><td class="dim">Neither set</td><td class="dim">—</td><td class="dim">Defaults to <code>true</code> — a token is mounted</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout good">
+        <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>
+        <p><strong>Baseline practice:</strong> set <code>automountServiceAccountToken: false</code> on every namespace's <code>default</code> SA. Then opt back in per-Pod, only for workloads that genuinely call the Kubernetes API. Most application Pods — a web frontend, a stateless API, a batch job that only talks to a database — never need cluster credentials at all.</p>
+      </div>
+    </section>
+
+    <!-- ================= PER-WORKLOAD ================= -->
+    <section class="content-section reveal" id="s-per-workload">
+      <div class="section-kicker">2.2 · Service Accounts — In Depth</div>
+      <h2 class="section-title">ServiceAccount-per-workload best practice</h2>
+      <p class="section-intro">One shared identity for every Pod in a namespace is convenient to set up and expensive to audit. Give each workload its own.</p>
+
+      <div class="diagram-frame reveal">
+        <svg viewBox="0 0 900 190" xmlns="http://www.w3.org/2000/svg">
+          <text x="20" y="24" font-family="Space Grotesk" font-size="11" font-weight="600" fill="#8a232c">Shared identity</text>
+          <g transform="translate(20,36)" opacity=".85">
+            <rect width="380" height="58" rx="12" fill="#fdeaec" stroke="#f3c6ca"/>
+            <text x="16" y="24" font-family="JetBrains Mono" font-size="9.5" fill="#8a232c">default</text>
+            <text x="16" y="40" font-family="Inter" font-size="8.5" fill="#8a232c">used by: checkout, billing, auth, export-job — all four</text>
+          </g>
+          <g stroke="#f3c6ca" stroke-width="1.4" stroke-dasharray="3 3">
+            <path d="M60 94 L60 118"/><path d="M160 94 L160 118"/><path d="M260 94 L260 118"/><path d="M360 94 L360 118"/>
+          </g>
+          <g font-family="Inter" font-size="8.4" fill="#8a232c" text-anchor="middle">
+            <text x="60" y="130">checkout</text><text x="160" y="130">billing</text><text x="260" y="130">auth</text><text x="360" y="130">export-job</text>
+          </g>
+          <text x="20" y="158" font-family="Inter" font-size="9" fill="#8a232c">One compromised Pod, one over-broad audit trail — every action looks identical in logs</text>
+
+          <line x1="450" y1="10" x2="450" y2="180" stroke="#dbe3ee"/>
+
+          <text x="480" y="24" font-family="Space Grotesk" font-size="11" font-weight="600" fill="#146648">Per-workload identity</text>
+          <g font-family="JetBrains Mono" font-size="8.6" fill="#146648">
+            <rect x="480" y="36" width="90" height="34" rx="8" fill="#e5f7ef" stroke="#bfe7d5"/>
+            <text x="525" y="57" text-anchor="middle">checkout-sa</text>
+            <rect x="580" y="36" width="80" height="34" rx="8" fill="#e5f7ef" stroke="#bfe7d5"/>
+            <text x="620" y="57" text-anchor="middle">billing-sa</text>
+            <rect x="670" y="36" width="70" height="34" rx="8" fill="#e5f7ef" stroke="#bfe7d5"/>
+            <text x="705" y="57" text-anchor="middle">auth-sa</text>
+            <rect x="750" y="36" width="100" height="34" rx="8" fill="#e5f7ef" stroke="#bfe7d5"/>
+            <text x="800" y="57" text-anchor="middle">export-job-sa</text>
+          </g>
+          <text x="480" y="94" font-family="Inter" font-size="9" fill="#146648">Each SA scoped to only what that one workload needs</text>
+          <text x="480" y="112" font-family="Inter" font-size="9" fill="#146648">Audit logs show exactly which service took an action</text>
+          <text x="480" y="130" font-family="Inter" font-size="9" fill="#146648">Compromise of one Pod doesn't expose the others' access</text>
+        </svg>
+        <div class="cap">Same four workloads, two identity models — one gives you an audit trail worth reading.</div>
+      </div>
+
+      <div class="grid grid-2">
+        <div class="card">
+          <h4>Why it pays off</h4>
+          <p>Blast-radius containment, clean audit trails (<code>system:serviceaccount:ns:checkout-sa</code> in every log line beats a generic <code>default</code>), and RBAC that can actually be scoped per-app instead of per-namespace.</p>
+        </div>
+        <div class="card">
+          <h4>Real-world pattern</h4>
+          <p>A microservices platform typically has one SA per Deployment — <code>logging-agent-sa</code> can only read/write log-related resources, <code>payment-service-sa</code> can only reach its own Secrets and ConfigMaps, and nothing overlaps by accident.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= LEAST PRIVILEGE ================= -->
+    <section class="content-section reveal" id="s-least-priv">
+      <div class="section-kicker">2.2 · Service Accounts — In Depth</div>
+      <h2 class="section-title">Least-privilege access for applications</h2>
+      <p class="section-intro">A ServiceAccount is just an identity — it has zero permissions until RBAC says otherwise. Least privilege means granting the smallest set of verbs, on the smallest set of resources, at the smallest scope that the workload actually needs.</p>
+
+      <div class="diagram-frame reveal">
+        <svg viewBox="0 0 860 160" xmlns="http://www.w3.org/2000/svg">
+          <g transform="translate(20,50)">
+            <rect width="150" height="60" rx="12" fill="#e5f7ef" stroke="#bfe7d5"/>
+            <text x="75" y="26" text-anchor="middle" font-family="Inter" font-weight="600" font-size="10" fill="#146648">ServiceAccount</text>
+            <text x="75" y="42" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#146648">log-reader-sa</text>
+          </g>
+          <path d="M170 80 L 250 80" stroke="#9fb3d1" stroke-width="1.6" marker-end="url(#arrow)"/>
+          <g transform="translate(250,50)">
+            <rect width="150" height="60" rx="12" fill="#f5f8fb" stroke="#dbe3ee"/>
+            <text x="75" y="26" text-anchor="middle" font-family="Inter" font-weight="600" font-size="10" fill="#182233">RoleBinding</text>
+            <text x="75" y="42" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#57647a">binds SA → Role</text>
+          </g>
+          <path d="M400 80 L 480 80" stroke="#9fb3d1" stroke-width="1.6" marker-end="url(#arrow)"/>
+          <g transform="translate(480,50)">
+            <rect width="150" height="60" rx="12" fill="#f5f8fb" stroke="#dbe3ee"/>
+            <text x="75" y="26" text-anchor="middle" font-family="Inter" font-weight="600" font-size="10" fill="#182233">Role</text>
+            <text x="75" y="42" text-anchor="middle" font-family="JetBrains Mono" font-size="8.6" fill="#57647a">namespace-scoped rules</text>
+          </g>
+          <path d="M630 80 L 700 80" stroke="#9fb3d1" stroke-width="1.6" marker-end="url(#arrow)"/>
+          <g transform="translate(700,40)">
+            <rect width="140" height="80" rx="12" fill="#182233"/>
+            <text x="70" y="24" text-anchor="middle" font-family="Inter" font-weight="600" font-size="9.5" fill="#ffffff">grants</text>
+            <text x="70" y="44" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#7fd8a6">get pods/log</text>
+            <text x="70" y="64" text-anchor="middle" font-family="Inter" font-size="8" fill="#8fa3c9">nothing else</text>
+          </g>
+        </svg>
+        <div class="cap">The chain that turns "an identity exists" into "this identity may do exactly this."</div>
+      </div>
+
+      <div class="grid grid-2">
+        <div class="card">
+          <h4>Role &amp; ClusterRole</h4>
+          <p>A <b>Role</b> grants access within one namespace. A <b>ClusterRole</b> can grant cluster-wide access, or be reused across namespaces via multiple RoleBindings. Default to <code>Role</code> unless you have a concrete reason to go cluster-wide.</p>
+        </div>
+        <div class="card">
+          <h4>Scope down to subresources</h4>
+          <p>RBAC can grant <code>pods/log</code> without granting <code>pods</code> itself, or <code>pods/exec</code> separately from either. A log shipper never needs to read full Pod specs — grant the subresource, not the object.</p>
+        </div>
+      </div>
+
+      <div class="callout good">
+        <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>
+        <p><strong>Verify before you ship:</strong> <code>kubectl auth can-i &lt;verb&gt; &lt;resource&gt; --as=system:serviceaccount:&lt;ns&gt;:&lt;name&gt; -n &lt;ns&gt;</code> answers "yes" or "no" using the real RBAC evaluation — no need to spin up a Pod just to test a permission. Every lab below uses it as the standard verification step.</p>
+      </div>
+    </section>
+
+    <!-- ================= LABS ================= -->
+    <header class="labs-hero content-section" style="border-bottom:none; padding-bottom:8px;" id="labs-top">
+      <div class="section-kicker">Hands-on · runs on your 3-node kubeadm cluster</div>
+      <h2 class="section-title">Labs 1–5</h2>
+      <p class="section-intro">Five labs, one running scenario, one namespace. Each lab verifies its own result with a command, not a screenshot — and Lab 5 tears the whole thing down in one line. Run them in order; each one builds on objects the last one created.</p>
+      <div class="callout note" style="margin-top:4px;">
+        <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg>
+        <p><strong>Before you start:</strong> confirm your context is pointed at the training cluster and you're using an identity with <code>cluster-admin</code> (the default kubeadm admin context qualifies) — RBAC testing and <code>--as=</code> impersonation both require it.</p>
+      </div>
+      <div class="cmd-block">
+        <div class="cmd-label"><span>ALL NODES · run once</span><button class="copy-btn" data-copy-target="setup-cmd"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 012-2h10"/></svg>Copy</button></div>
+        <pre id="setup-cmd"><span class="c2"># confirm the cluster and current identity</span>
+kubectl get nodes -o wide
+kubectl auth whoami <span class="c2"># kubectl v1.28+; on older kubectl use: kubectl config current-context</span>
+<span class="c2"># create the working namespace used across all 5 labs</span>
+kubectl create namespace iam-lab</pre>
+      </div>
+    </header>
+
+    <div class="content-section" style="padding-top:0;">
+
+      <!-- LAB 1 -->
+      <div class="lab-card reveal" id="lab-1">
+        <div class="lab-head">
+          <div>
+            <h3>Lab 1 · What the default ServiceAccount exposes</h3>
+            <p class="lab-goal">Launch a Pod with no ServiceAccount set, find its mounted credential, and use it to call the API server directly — seeing exactly what a compromised Pod inherits by default.</p>
+          </div>
+          <div class="lab-meta"><span class="pill-diff intro">Intro</span><span class="pill-time">~20 min</span></div>
+        </div>
+        <div class="prereq"><b>Prerequisite:</b> <code>iam-lab</code> namespace exists (created above). No ServiceAccounts or RBAC objects yet.</div>
+        <div class="lab-body">
+
+          <div class="step">
+            <div class="step-head"><div class="step-num">1</div><h4>Launch a Pod with no ServiceAccount specified</h4></div>
+            <p class="step-desc">We use <code>curlimages/curl</code> rather than plain busybox — its <code>curl</code> negotiates TLS against the API server properly, where busybox's minimal <code>wget</code> TLS stack often fails the handshake outright.</p>
+            <div class="cmd-block">
+              <div class="cmd-label"><span>test-pod.yaml</span><button class="copy-btn" data-copy-target="l1s1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 012-2h10"/></svg>Copy</button></div>
+              <pre id="l1s1">cat &lt;&lt;EOF | kubectl apply -f -
+apiVersion: v1
+kind: Pod
+metadata:
+  name: test-pod
+  namespace: iam-lab
+spec:
+  containers:
+  - name: app
+    image: curlimages/curl:8.10.1
+    command: ["sleep", "3600"]
+EOF
+kubectl wait --for=condition=Ready pod/test-pod -n iam-lab --timeout=60s</pre>
+            </div>
+          </div>
+
+          <div class="step">
+            <div class="step-head"><div class="step-num">2</div><h4>Confirm which ServiceAccount it actually got</h4></div>
+            <div class="cmd-block">
+              <div class="cmd-label"><span>bash</span><button class="copy-btn" data-copy-target="l1s2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 012-2h10"/></svg>Copy</button></div>
+              <pre id="l1s2">kubectl get pod test-pod -n iam-lab -o jsonpath='{.spec.serviceAccountName}{"\n"}'</pre>
+            </div>
+            <div class="expected"><div class="k">EXPECTED OUTPUT</div><pre>default</pre></div>
+          </div>
+
+          <div class="step">
+            <div class="step-head"><div class="step-num">3</div><h4>Find the auto-mounted credential inside the Pod</h4></div>
+            <div class="cmd-block">
+              <div class="cmd-label"><span>bash</span><button class="copy-btn" data-copy-target="l1s3"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 012-2h10"/></svg>Copy</button></div>
+              <pre id="l1s3">kubectl exec -n iam-lab test-pod -- ls /var/run/secrets/kubernetes.io/serviceaccount/</pre>
+            </div>
+            <div class="expected"><div class="k">EXPECTED OUTPUT</div><pre>ca.crt
+namespace
+token</pre></div>
+          </div>
+
+          <div class="step">
+            <div class="step-head"><div class="step-num">4</div><h4>Pull the token out and inspect its claims</h4></div>
+            <p class="step-desc">Copy the token into a shell variable, then decode the JWT payload with Python (handles base64url padding correctly, unlike a raw <code>base64 -d</code>).</p>
+            <div class="cmd-block">
+              <div class="cmd-label"><span>bash</span><button class="copy-btn" data-copy-target="l1s4"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 012-2h10"/></svg>Copy</button></div>
+              <pre id="l1s4">TOKEN=$(kubectl exec -n iam-lab test-pod -- cat /var/run/secrets/kubernetes.io/serviceaccount/token)
+
+python3 -c "
+import base64, json
+payload = '$TOKEN'.split('.')[1]
+payload += '=' * (-len(payload) % 4)
+print(json.dumps(json.loads(base64.urlsafe_b64decode(payload)), indent=2))
+"</pre>
+            </div>
+            <div class="expected"><div class="k">EXPECTED OUTPUT (abridged)</div><pre>{
+  "aud": ["https://kubernetes.default.svc"],
+  "exp": 1234567890,
+  "kubernetes.io": {
+    "namespace": "iam-lab",
+    "pod": {"name": "test-pod", ...},
+    "serviceaccount": {"name": "default", ...}
+  },
+  "sub": "system:serviceaccount:iam-lab:default"
+}</pre></div>
+            <div class="callout note"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg><p>Note the <code>exp</code> claim — this is a bound token, valid for roughly an hour, not the indefinitely-lived kind older clusters issued by default.</p></div>
+          </div>
+
+          <div class="step">
+            <div class="step-head"><div class="step-num">5</div><h4>Use the token to make a real, authenticated API call — from inside the Pod</h4></div>
+            <p class="step-desc">This is the credential in use, exactly as an attacker with shell access to this Pod would use it.</p>
+            <div class="cmd-block">
+              <div class="cmd-label"><span>bash</span><button class="copy-btn" data-copy-target="l1s5"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 012-2h10"/></svg>Copy</button></div>
+              <pre id="l1s5">kubectl exec -n iam-lab test-pod -- sh -c '
+curl -sS \
+  --cacert /var/run/secrets/kubernetes.io/serviceaccount/ca.crt \
+  --header "Authorization: Bearer $(cat /var/run/secrets/kubernetes.io/serviceaccount/token)" \
+  https://kubernetes.default.svc/api'</pre>
+            </div>
+            <div class="expected"><div class="k">EXPECTED OUTPUT</div><pre>{
+  "kind": "APIVersions",
+  "versions": ["v1"],
+  ...
+}</pre></div>
+          </div>
+
+          <div class="step">
+            <div class="step-head"><div class="step-num">6</div><h4>Now try something that requires actual RBAC permission</h4></div>
+            <div class="cmd-block">
+              <div class="cmd-label"><span>bash</span><button class="copy-btn" data-copy-target="l1s6"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 012-2h10"/></svg>Copy</button></div>
+              <pre id="l1s6">kubectl exec -n iam-lab test-pod -- sh -c '
+curl -sS \
+  --cacert /var/run/secrets/kubernetes.io/serviceaccount/ca.crt \
+  --header "Authorization: Bearer $(cat /var/run/secrets/kubernetes.io/serviceaccount/token)" \
+  https://kubernetes.default.svc/api/v1/namespaces/iam-lab/pods'</pre>
+            </div>
+            <div class="expected"><div class="k">EXPECTED OUTPUT</div><pre>{
+  "kind": "Status",
+  "apiVersion": "v1",
+  "status": "Failure",
+  "message": "pods is forbidden: User \"system:serviceaccount:iam-lab:default\" cannot list resource \"pods\" in API group \"\" in the namespace \"iam-lab\"",
+  "reason": "Forbidden",
+  "code": 403
+}</pre></div>
+          </div>
+
+          <div class="verify">
+            <h5>Verify &amp; key learnings</h5>
+            <ul>
+              <li>Step 5 succeeded and step 6 failed — the token authenticates fine (identity is valid), it's authorization that currently blocks it. A fresh <code>default</code> SA has no RBAC bound, which is exactly the safe starting point.</li>
+              <li>The risk isn't the token existing — it's what happens the day someone binds a Role or <code>cluster-admin</code> to <code>default</code> for convenience. Every Pod in the namespace inherits that instantly.</li>
+              <li>Leave <code>test-pod</code> running — Lab 2 uses it for comparison.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- LAB 2 -->
+      <div class="lab-card reveal" id="lab-2">
+        <div class="lab-head">
+          <div>
+            <h3>Lab 2 · Give the workload its own identity, and control automount</h3>
+            <p class="lab-goal">Create a dedicated ServiceAccount, disable automount on the namespace's <code>default</code> SA, and confirm the difference in what each Pod ends up with.</p>
+          </div>
+          <div class="lab-meta"><span class="pill-diff core">Core</span><span class="pill-time">~20 min</span></div>
+        </div>
+        <div class="prereq"><b>Prerequisite:</b> Lab 1 complete, <code>test-pod</code> still running in <code>iam-lab</code>.</div>
+        <div class="lab-body">
+
+          <div class="step">
+            <div class="step-head"><div class="step-num">1</div><h4>Create a dedicated ServiceAccount</h4></div>
+            <div class="cmd-block">
+              <div class="cmd-label"><span>bash</span><button class="copy-btn" data-copy-target="l2s1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 012-2h10"/></svg>Copy</button></div>
+              <pre id="l2s1">kubectl create serviceaccount app-reader-sa -n iam-lab</pre>
+            </div>
+          </div>
+
+          <div class="step">
+            <div class="step-head"><div class="step-num">2</div><h4>Disable automount on the namespace's default SA</h4></div>
+            <p class="step-desc">This is the safe-by-default hardening step: unlabeled Pods stop getting a live API credential at all.</p>
+            <div class="cmd-block">
+              <div class="cmd-label"><span>bash</span><button class="copy-btn" data-copy-target="l2s2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 012-2h10"/></svg>Copy</button></div>
+              <pre id="l2s2">kubectl patch serviceaccount default -n iam-lab \
+  -p '{"automountServiceAccountToken": false}'</pre>
+            </div>
+          </div>
+
+          <div class="step">
+            <div class="step-head"><div class="step-num">3</div><h4>Launch a Pod explicitly using the new ServiceAccount</h4></div>
+            <div class="cmd-block">
+              <div class="cmd-label"><span>app-pod.yaml</span><button class="copy-btn" data-copy-target="l2s3"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 012-2h10"/></svg>Copy</button></div>
+              <pre id="l2s3">cat &lt;&lt;EOF | kubectl apply -f -
+apiVersion: v1
+kind: Pod
+metadata:
+  name: app-pod
+  namespace: iam-lab
+spec:
+  serviceAccountName: app-reader-sa
+  automountServiceAccountToken: true
+  containers:
+  - name: app
+    image: curlimages/curl:8.10.1
+    command: ["sleep", "3600"]
+EOF
+kubectl wait --for=condition=Ready pod/app-pod -n iam-lab --timeout=60s</pre>
+            </div>
+          </div>
+
+          <div class="step">
+            <div class="step-head"><div class="step-num">4</div><h4>Confirm a fresh default-SA Pod now gets no token at all</h4></div>
+            <div class="cmd-block">
+              <div class="cmd-label"><span>bash</span><button class="copy-btn" data-copy-target="l2s4"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 012-2h10"/></svg>Copy</button></div>
+              <pre id="l2s4">kubectl run no-token-pod --image=busybox:1.36 -n iam-lab --restart=Never -- sleep 3600
+kubectl wait --for=condition=Ready pod/no-token-pod -n iam-lab --timeout=60s
+kubectl exec -n iam-lab no-token-pod -- ls /var/run/secrets/kubernetes.io/serviceaccount/</pre>
+            </div>
+            <div class="expected"><div class="k">EXPECTED OUTPUT</div><pre>ls: /var/run/secrets/kubernetes.io/serviceaccount/: No such file or directory</pre></div>
+          </div>
+
+          <div class="verify">
+            <h5>Verify &amp; key learnings</h5>
+            <ul>
+              <li><code>app-pod</code> (explicit SA + <code>automountServiceAccountToken: true</code>) has a token. <code>no-token-pod</code> (default SA, automount now disabled) does not — the Pod-level setting overrides the ServiceAccount-level one, and here neither Pod set an override, so the SA-level default wins.</li>
+              <li><code>test-pod</code> from Lab 1 keeps its original token — the automount setting only affects Pods created after the patch.</li>
+              <li>This is the pattern: deny by default at the ServiceAccount, opt in explicitly per Pod that genuinely needs API access.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- LAB 3 -->
+      <div class="lab-card reveal" id="lab-3">
+        <div class="lab-head">
+          <div>
+            <h3>Lab 3 · Bind least-privilege RBAC to the ServiceAccount</h3>
+            <p class="lab-goal">Grant <code>app-reader-sa</code> permission to read Pods — and nothing more — using a Role and RoleBinding, then prove the boundary with <code>kubectl auth can-i</code>.</p>
+          </div>
+          <div class="lab-meta"><span class="pill-diff core">Core</span><span class="pill-time">~25 min</span></div>
+        </div>
+        <div class="prereq"><b>Prerequisite:</b> Lab 2 complete — <code>app-reader-sa</code> and <code>app-pod</code> exist in <code>iam-lab</code>.</div>
+        <div class="lab-body">
+
+          <div class="step">
+            <div class="step-head"><div class="step-num">1</div><h4>Confirm the ServiceAccount currently has zero permissions</h4></div>
+            <div class="cmd-block">
+              <div class="cmd-label"><span>bash</span><button class="copy-btn" data-copy-target="l3s1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 012-2h10"/></svg>Copy</button></div>
+              <pre id="l3s1">kubectl auth can-i list pods \
+  --as=system:serviceaccount:iam-lab:app-reader-sa -n iam-lab</pre>
+            </div>
+            <div class="expected"><div class="k">EXPECTED OUTPUT</div><pre>no</pre></div>
+          </div>
+
+          <div class="step">
+            <div class="step-head"><div class="step-num">2</div><h4>Create a Role scoped to read-only Pod access</h4></div>
+            <div class="cmd-block">
+              <div class="cmd-label"><span>pod-reader-role.yaml</span><button class="copy-btn" data-copy-target="l3s2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 012-2h10"/></svg>Copy</button></div>
+              <pre id="l3s2">cat &lt;&lt;EOF | kubectl apply -f -
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: pod-reader
+  namespace: iam-lab
+rules:
+- apiGroups: [""]
+  resources: ["pods"]
+  verbs: ["get", "list", "watch"]
+EOF</pre>
+            </div>
+          </div>
+
+          <div class="step">
+            <div class="step-head"><div class="step-num">3</div><h4>Bind the Role to the ServiceAccount</h4></div>
+            <div class="cmd-block">
+              <div class="cmd-label"><span>pod-reader-binding.yaml</span><button class="copy-btn" data-copy-target="l3s3"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 012-2h10"/></svg>Copy</button></div>
+              <pre id="l3s3">cat &lt;&lt;EOF | kubectl apply -f -
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: app-reader-binding
+  namespace: iam-lab
+subjects:
+- kind: ServiceAccount
+  name: app-reader-sa
+  namespace: iam-lab
+roleRef:
+  kind: Role
+  name: pod-reader
+  apiGroup: rbac.authorization.k8s.io
+EOF</pre>
+            </div>
+          </div>
+
+          <div class="step">
+            <div class="step-head"><div class="step-num">4</div><h4>Verify the boundary — allowed and denied actions</h4></div>
+            <div class="cmd-block">
+              <div class="cmd-label"><span>bash</span><button class="copy-btn" data-copy-target="l3s4"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 012-2h10"/></svg>Copy</button></div>
+              <pre id="l3s4">kubectl auth can-i list pods \
+  --as=system:serviceaccount:iam-lab:app-reader-sa -n iam-lab
+kubectl auth can-i delete pods \
+  --as=system:serviceaccount:iam-lab:app-reader-sa -n iam-lab
+kubectl auth can-i list pods \
+  --as=system:serviceaccount:iam-lab:app-reader-sa -n default</pre>
+            </div>
+            <div class="expected"><div class="k">EXPECTED OUTPUT</div><pre>yes
+no
+no</pre></div>
+          </div>
+
+          <div class="step">
+            <div class="step-head"><div class="step-num">5</div><h4>Confirm it live, from inside the Pod itself</h4></div>
+            <div class="cmd-block">
+              <div class="cmd-label"><span>bash</span><button class="copy-btn" data-copy-target="l3s5"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 012-2h10"/></svg>Copy</button></div>
+              <pre id="l3s5">kubectl exec -n iam-lab app-pod -- sh -c '
+curl -sS \
+  --cacert /var/run/secrets/kubernetes.io/serviceaccount/ca.crt \
+  --header "Authorization: Bearer $(cat /var/run/secrets/kubernetes.io/serviceaccount/token)" \
+  https://kubernetes.default.svc/api/v1/namespaces/iam-lab/pods | head -c 200'</pre>
+            </div>
+            <div class="expected"><div class="k">EXPECTED OUTPUT</div><pre>{"kind":"PodList","apiVersion":"v1", ...</pre></div>
+          </div>
+
+          <div class="verify">
+            <h5>Verify &amp; key learnings</h5>
+            <ul>
+              <li>The third <code>can-i</code> check (<code>-n default</code>) returning <code>no</code> confirms a Role's grant stays inside its own namespace — that's the difference from a ClusterRole.</li>
+              <li><code>kubectl auth can-i --as=</code> is the fast way to validate RBAC before you ever run a workload — prefer it over trial-and-error from inside a Pod.</li>
+              <li>The Role grants three read verbs on one resource — nothing about Secrets, Deployments, or write access was ever in scope.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- LAB 4 -->
+      <div class="lab-card reveal" id="lab-4">
+        <div class="lab-head">
+          <div>
+            <h3>Lab 4 · Bound tokens vs legacy long-lived tokens</h3>
+            <p class="lab-goal">Issue a short-lived token via the TokenRequest API, inspect its claims, then create an old-style Secret-backed token and compare the two side by side.</p>
+          </div>
+          <div class="lab-meta"><span class="pill-diff adv">Advanced</span><span class="pill-time">~25 min</span></div>
+        </div>
+        <div class="prereq"><b>Prerequisite:</b> Lab 3 complete — <code>app-reader-sa</code> exists with RBAC bound.</div>
+        <div class="lab-body">
+
+          <div class="step">
+            <div class="step-head"><div class="step-num">1</div><h4>Request a bound token directly with <code>kubectl create token</code></h4></div>
+            <p class="step-desc">This calls the TokenRequest API — the same mechanism the kubelet uses to project tokens into Pods.</p>
+            <div class="cmd-block">
+              <div class="cmd-label"><span>bash</span><button class="copy-btn" data-copy-target="l4s1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 012-2h10"/></svg>Copy</button></div>
+              <pre id="l4s1">kubectl create token app-reader-sa -n iam-lab --duration=10m</pre>
+            </div>
+            <div class="expected"><div class="k">EXPECTED OUTPUT</div><pre>eyJhbGciOiJSUzI1NiIsImtpZCI6Ii4uLiJ9.eyJhdWQiOlsi... (a JWT string)</pre></div>
+          </div>
+
+          <div class="step">
+            <div class="step-head"><div class="step-num">2</div><h4>Decode it and check the expiry window</h4></div>
+            <div class="cmd-block">
+              <div class="cmd-label"><span>bash</span><button class="copy-btn" data-copy-target="l4s2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 012-2h10"/></svg>Copy</button></div>
+              <pre id="l4s2">SHORT_TOKEN=$(kubectl create token app-reader-sa -n iam-lab --duration=10m)
+
+python3 -c "
+import base64, json, time
+payload = '$SHORT_TOKEN'.split('.')[1]
+payload += '=' * (-len(payload) % 4)
+claims = json.loads(base64.urlsafe_b64decode(payload))
+print('exp:', claims['exp'], '  seconds from now:', claims['exp'] - int(time.time()))
+print('aud:', claims['aud'])
+"</pre>
+            </div>
+            <div class="expected"><div class="k">EXPECTED OUTPUT</div><pre>exp: 1234568490   seconds from now: ~600
+aud: ['https://kubernetes.default.svc']</pre></div>
+          </div>
+
+          <div class="step">
+            <div class="step-head"><div class="step-num">3</div><h4>Now create a legacy, Secret-backed token for comparison</h4></div>
+            <p class="step-desc">Pre-1.24 clusters auto-created one of these per ServiceAccount. Modern clusters don't — but the mechanism still exists for legacy integrations that can't use short-lived tokens.</p>
+            <div class="cmd-block">
+              <div class="cmd-label"><span>legacy-token.yaml</span><button class="copy-btn" data-copy-target="l4s3"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 012-2h10"/></svg>Copy</button></div>
+              <pre id="l4s3">cat &lt;&lt;EOF | kubectl apply -f -
+apiVersion: v1
+kind: Secret
+metadata:
+  name: app-reader-legacy-token
+  namespace: iam-lab
+  annotations:
+    kubernetes.io/service-account.name: app-reader-sa
+type: kubernetes.io/service-account-token
+EOF
+kubectl wait --for=jsonpath='{.data.token}' secret/app-reader-legacy-token -n iam-lab --timeout=30s</pre>
+            </div>
+          </div>
+
+          <div class="step">
+            <div class="step-head"><div class="step-num">4</div><h4>Decode the legacy token's claims</h4></div>
+            <div class="cmd-block">
+              <div class="cmd-label"><span>bash</span><button class="copy-btn" data-copy-target="l4s4"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 012-2h10"/></svg>Copy</button></div>
+              <pre id="l4s4">LEGACY_TOKEN=$(kubectl get secret app-reader-legacy-token -n iam-lab -o jsonpath='{.data.token}' | base64 -d)
+
+python3 -c "
+import base64, json
+payload = '$LEGACY_TOKEN'.split('.')[1]
+payload += '=' * (-len(payload) % 4)
+claims = json.loads(base64.urlsafe_b64decode(payload))
+print('has exp claim:', 'exp' in claims)
+print('sub:', claims.get('sub'))
+"</pre>
+            </div>
+            <div class="expected"><div class="k">EXPECTED OUTPUT</div><pre>has exp claim: False
+sub: system:serviceaccount:iam-lab:app-reader-sa</pre></div>
+          </div>
+
+          <div class="step">
+            <div class="step-head"><div class="step-num">5</div><h4>Clean up the legacy token — don't leave long-lived credentials lying around</h4></div>
+            <div class="cmd-block">
+              <div class="cmd-label"><span>bash</span><button class="copy-btn" data-copy-target="l4s5"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 012-2h10"/></svg>Copy</button></div>
+              <pre id="l4s5">kubectl delete secret app-reader-legacy-token -n iam-lab</pre>
+            </div>
+          </div>
+
+          <div class="verify">
+            <h5>Verify &amp; key learnings</h5>
+            <ul>
+              <li>The bound token carries an <code>exp</code> claim roughly 10 minutes out (matching <code>--duration</code>); the legacy Secret-backed token has none at all — it's valid until someone manually revokes it.</li>
+              <li>Same ServiceAccount, same RBAC, two very different risk profiles depending on which token type is in use.</li>
+              <li>This is exactly why bound tokens became the 1.24 default: identical permissions, dramatically smaller time-window if one leaks.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- LAB 5 -->
+      <div class="lab-card reveal" id="lab-5">
+        <div class="lab-head">
+          <div>
+            <h3>Lab 5 · End-to-end: subresource scoping, negative testing, teardown</h3>
+            <p class="lab-goal">Build a log-reader workload scoped to exactly one subresource, confirm what it can and can't reach, then remove everything this module created in a single command.</p>
+          </div>
+          <div class="lab-meta"><span class="pill-diff core">Core</span><span class="pill-time">~30 min</span></div>
+        </div>
+        <div class="prereq"><b>Prerequisite:</b> Labs 1–4 complete. <code>iam-lab</code> namespace still has <code>test-pod</code> and <code>app-pod</code> running.</div>
+        <div class="lab-body">
+
+          <div class="step">
+            <div class="step-head"><div class="step-num">1</div><h4>Create a log-producing Pod and a scoped ServiceAccount</h4></div>
+            <div class="cmd-block">
+              <div class="cmd-label"><span>bash</span><button class="copy-btn" data-copy-target="l5s1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 012-2h10"/></svg>Copy</button></div>
+              <pre id="l5s1">kubectl run log-source --image=busybox:1.36 -n iam-lab --restart=Never -- \
+  sh -c 'while true; do echo "heartbeat $(date +%s)"; sleep 5; done'
+kubectl wait --for=condition=Ready pod/log-source -n iam-lab --timeout=60s
+
+kubectl create serviceaccount log-reader-sa -n iam-lab</pre>
+            </div>
+          </div>
+
+          <div class="step">
+            <div class="step-head"><div class="step-num">2</div><h4>Grant access to <code>pods/log</code> only — not <code>pods</code> itself</h4></div>
+            <div class="cmd-block">
+              <div class="cmd-label"><span>log-reader-role.yaml</span><button class="copy-btn" data-copy-target="l5s2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 012-2h10"/></svg>Copy</button></div>
+              <pre id="l5s2">cat &lt;&lt;EOF | kubectl apply -f -
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: log-reader
+  namespace: iam-lab
+rules:
+- apiGroups: [""]
+  resources: ["pods/log"]
+  verbs: ["get"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: log-reader-binding
+  namespace: iam-lab
+subjects:
+- kind: ServiceAccount
+  name: log-reader-sa
+  namespace: iam-lab
+roleRef:
+  kind: Role
+  name: log-reader
+  apiGroup: rbac.authorization.k8s.io
+EOF</pre>
+            </div>
+          </div>
+
+          <div class="step">
+            <div class="step-head"><div class="step-num">3</div><h4>Launch the log-reader Pod</h4></div>
+            <div class="cmd-block">
+              <div class="cmd-label"><span>bash</span><button class="copy-btn" data-copy-target="l5s3"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 012-2h10"/></svg>Copy</button></div>
+              <pre id="l5s3">cat &lt;&lt;EOF | kubectl apply -f -
+apiVersion: v1
+kind: Pod
+metadata:
+  name: log-reader-pod
+  namespace: iam-lab
+spec:
+  serviceAccountName: log-reader-sa
+  containers:
+  - name: reader
+    image: curlimages/curl:8.10.1
+    command: ["sleep", "3600"]
+EOF
+kubectl wait --for=condition=Ready pod/log-reader-pod -n iam-lab --timeout=60s</pre>
+            </div>
+          </div>
+
+          <div class="step">
+            <div class="step-head"><div class="step-num">4</div><h4>Positive test — read the logs subresource</h4></div>
+            <div class="cmd-block">
+              <div class="cmd-label"><span>bash</span><button class="copy-btn" data-copy-target="l5s4"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 012-2h10"/></svg>Copy</button></div>
+              <pre id="l5s4">kubectl exec -n iam-lab log-reader-pod -- sh -c '
+curl -sS \
+  --cacert /var/run/secrets/kubernetes.io/serviceaccount/ca.crt \
+  --header "Authorization: Bearer $(cat /var/run/secrets/kubernetes.io/serviceaccount/token)" \
+  https://kubernetes.default.svc/api/v1/namespaces/iam-lab/pods/log-source/log'</pre>
+            </div>
+            <div class="expected"><div class="k">EXPECTED OUTPUT</div><pre>heartbeat 1234567890
+heartbeat 1234567895
+...</pre></div>
+          </div>
+
+          <div class="step">
+            <div class="step-head"><div class="step-num">5</div><h4>Negative test — the same Pod, the full object this time</h4></div>
+            <div class="cmd-block">
+              <div class="cmd-label"><span>bash</span><button class="copy-btn" data-copy-target="l5s5"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 012-2h10"/></svg>Copy</button></div>
+              <pre id="l5s5">kubectl exec -n iam-lab log-reader-pod -- sh -c '
+curl -sS \
+  --cacert /var/run/secrets/kubernetes.io/serviceaccount/ca.crt \
+  --header "Authorization: Bearer $(cat /var/run/secrets/kubernetes.io/serviceaccount/token)" \
+  https://kubernetes.default.svc/api/v1/namespaces/iam-lab/pods/log-source'
+kubectl auth can-i get pods --as=system:serviceaccount:iam-lab:log-reader-sa -n iam-lab
+kubectl auth can-i get pods/log --as=system:serviceaccount:iam-lab:log-reader-sa -n iam-lab</pre>
+            </div>
+            <div class="expected"><div class="k">EXPECTED OUTPUT</div><pre>{
+  "kind": "Status",
+  "apiVersion": "v1",
+  "status": "Failure",
+  "message": "pods \"log-source\" is forbidden: User \"system:serviceaccount:iam-lab:log-reader-sa\" cannot get resource \"pods\" in API group \"\" in the namespace \"iam-lab\"",
+  "reason": "Forbidden",
+  "code": 403
+}
+no
+yes</pre></div>
+          </div>
+
+          <div class="step">
+            <div class="step-head"><div class="step-num">6</div><h4>Tear down — remove everything this module created</h4></div>
+            <div class="cmd-block">
+              <div class="cmd-label"><span>bash</span><button class="copy-btn" data-copy-target="l5s6"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 012-2h10"/></svg>Copy</button></div>
+              <pre id="l5s6">kubectl delete namespace iam-lab</pre>
+            </div>
+            <div class="expected"><div class="k">EXPECTED OUTPUT</div><pre>namespace "iam-lab" deleted</pre></div>
+          </div>
+
+          <div class="verify">
+            <h5>Verify &amp; key learnings</h5>
+            <ul>
+              <li>The 403 on the full Pod object, next to the 200 on <code>pods/log</code>, is RBAC subresource scoping working exactly as designed — the finest grain of least privilege this module covers.</li>
+              <li><code>can-i</code> and the live API call agree, which is the whole point of using it as your verification step: it's not a guess, it's the same evaluation the API server performs.</li>
+              <li>Deleting the namespace cleans up every object created across all 5 labs — Pods, ServiceAccounts, Roles, RoleBindings — in one command.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <footer class="footer">
+      <p><strong>Module recap:</strong> Users are external identities Kubernetes never stores; ServiceAccounts are real, namespaced objects meant for workloads. Every Pod gets one whether you ask for it or not, so the default should be locked down, not left open. Bound tokens replaced long-lived ones for a reason. Scope RBAC to the verb, resource, and subresource a workload actually needs — then verify it with <code>kubectl auth can-i</code>, not assumption.</p>
+      <p>Validated against a 3-node kubeadm cluster using <code>busybox:1.36</code> (shells, log producers) and <code>curlimages/curl:8.10.1</code> (any step that calls the API server over TLS) — no cloud-managed load balancers, no deprecated <code>kubectl</code> flags, no external images requiring authentication.</p>
+    </footer>
+  </main>
+</div>
+
+<button class="back-top" id="backTop" aria-label="Back to top">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 19V5M5 12l7-7 7 7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+</button>
+
+<style>
+.pulse{animation:pulseDot 2.4s ease-in-out infinite;}
+@keyframes pulseDot{
+  0%{fill:#e8eefd;}
+  15%{fill:#2c5fe0;}
+  40%{fill:#e8eefd;}
+  100%{fill:#e8eefd;}
+}
+</style>
+
+<script>
+(function(){
+  // ---- sidebar mobile toggle ----
+  var sidebar = document.getElementById('sidebar');
+  var toggle = document.getElementById('sidebarToggle');
+  if(toggle){
+    toggle.addEventListener('click', function(){ sidebar.classList.toggle('open'); });
+  }
+  document.querySelectorAll('.navlink').forEach(function(link){
+    link.addEventListener('click', function(){ sidebar.classList.remove('open'); });
+  });
+
+  // ---- active section tracking ----
+  var navLinks = Array.prototype.slice.call(document.querySelectorAll('.navlink'));
+  var sections = navLinks.map(function(l){
+    var id = l.getAttribute('href').slice(1);
+    return document.getElementById(id);
+  }).filter(Boolean);
+
+  var io = new IntersectionObserver(function(entries){
+    entries.forEach(function(entry){
+      var link = document.querySelector('.navlink[href="#' + entry.target.id + '"]');
+      if(!link) return;
+      if(entry.isIntersecting){
+        navLinks.forEach(function(l){ l.classList.remove('active'); });
+        link.classList.add('active');
+      }
+    });
+  }, {rootMargin: '-15% 0px -70% 0px', threshold: 0});
+  sections.forEach(function(s){ io.observe(s); });
+
+  // ---- scroll reveal ----
+  var revealIo = new IntersectionObserver(function(entries){
+    entries.forEach(function(entry){
+      if(entry.isIntersecting){
+        entry.target.classList.add('in-view');
+        revealIo.unobserve(entry.target);
+      }
+    });
+  }, {threshold: 0.12});
+  document.querySelectorAll('.reveal').forEach(function(el){ revealIo.observe(el); });
+
+  // ---- copy buttons ----
+  document.querySelectorAll('.copy-btn').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var targetId = btn.getAttribute('data-copy-target');
+      var pre = document.getElementById(targetId);
+      if(!pre) return;
+      var text = pre.innerText;
+      var done = function(){
+        var original = btn.innerHTML;
+        btn.innerHTML = 'Copied';
+        setTimeout(function(){ btn.innerHTML = original; }, 1400);
+      };
+      if(navigator.clipboard && navigator.clipboard.writeText){
+        navigator.clipboard.writeText(text).then(done).catch(function(){ fallbackCopy(text, done); });
+      } else {
+        fallbackCopy(text, done);
+      }
+    });
+  });
+  function fallbackCopy(text, cb){
+    var ta = document.createElement('textarea');
+    ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
+    try{ document.execCommand('copy'); }catch(e){}
+    document.body.removeChild(ta);
+    if(cb) cb();
+  }
+
+  // ---- back to top ----
+  var backTop = document.getElementById('backTop');
+  window.addEventListener('scroll', function(){
+    if(window.scrollY > 700){ backTop.classList.add('show'); } else { backTop.classList.remove('show'); }
+  });
+  backTop.addEventListener('click', function(){ window.scrollTo({top:0, behavior:'smooth'}); });
+
+  // ---- tilt effect on badge cards ----
+  document.querySelectorAll('.tilt').forEach(function(card){
+    card.addEventListener('mousemove', function(e){
+      var r = card.getBoundingClientRect();
+      var x = (e.clientX - r.left) / r.width - 0.5;
+      var y = (e.clientY - r.top) / r.height - 0.5;
+      card.style.transform = 'rotateY(' + (x * 6) + 'deg) rotateX(' + (y * -6) + 'deg)';
+    });
+    card.addEventListener('mouseleave', function(){ card.style.transform = 'rotateY(0deg) rotateX(0deg)'; });
+  });
+
+  // ---- JWT decoder tool ----
+  var input = document.getElementById('jwtInput');
+  var headerOut = document.getElementById('jwtHeader');
+  var payloadOut = document.getElementById('jwtPayload');
+  var hint = document.getElementById('jwtHint');
+
+  function b64urlDecode(str){
+    str = str.replace(/-/g, '+').replace(/_/g, '/');
+    while(str.length % 4){ str += '='; }
+    var decoded = atob(str);
+    try{
+      return decodeURIComponent(Array.prototype.map.call(decoded, function(c){
+        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+      }).join(''));
+    }catch(e){
+      return decoded;
+    }
+  }
+
+  function decodeJwt(){
+    var value = input.value.trim();
+    if(!value){
+      headerOut.textContent = '—'; payloadOut.textContent = '—';
+      hint.textContent = 'Waiting for input…';
+      return;
+    }
+    var parts = value.split('.');
+    if(parts.length < 2){
+      hint.textContent = 'That does not look like a JWT — expected three dot-separated segments.';
+      return;
+    }
+    try{
+      var header = JSON.parse(b64urlDecode(parts[0]));
+      var payload = JSON.parse(b64urlDecode(parts[1]));
+      headerOut.textContent = JSON.stringify(header, null, 2);
+      payloadOut.textContent = JSON.stringify(payload, null, 2);
+      var expNote = '';
+      if(payload.exp){
+        var secondsLeft = payload.exp - Math.floor(Date.now() / 1000);
+        expNote = secondsLeft > 0 ? ' · expires in ~' + Math.round(secondsLeft/60) + ' min' : ' · already expired';
+      }
+      hint.textContent = 'Decoded locally' + expNote + '.';
+    }catch(e){
+      hint.textContent = 'Could not decode that — check it was pasted in full.';
+    }
+  }
+  if(input){ input.addEventListener('input', decodeJwt); }
+})();
+</script>
+</body>
+</html>
