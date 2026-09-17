@@ -1,0 +1,1207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ingress &amp; Traffic Management — K8s Training Module 3</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#eef2f8; --surface:#ffffff; --surface-2:#f6f8fc;
+  --text:#1e293b; --text-muted:#5b6b84; --border:#dfe6f0;
+  --blue:#2563eb; --blue-dk:#1d4ed8; --green:#16a34a; --green-dk:#0f7a37;
+  --amber:#c2760c; --red:#dc2626;
+  --code-bg:#0f172a; --code-text:#e2e8f0;
+  --shadow: 0 1px 2px rgba(30,41,59,.06), 0 6px 16px rgba(30,41,59,.06);
+  --radius: 10px;
+  --font-head:'Space Grotesk',system-ui,sans-serif;
+  --font-body:'Inter',system-ui,sans-serif;
+  --font-code:'JetBrains Mono',monospace;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--text);font-family:var(--font-body);line-height:1.55;font-size:15.5px}
+h1,h2,h3,h4{font-family:var(--font-head);font-weight:600;color:#0f1a2e;line-height:1.25;margin:0 0 .5em}
+p{margin:.4em 0 .9em;color:var(--text)}
+a{color:var(--blue)}
+code,pre{font-family:var(--font-code)}
+.container{max-width:1180px;margin:0 auto;padding:0 28px}
+
+/* ===== Layout: sidebar + content ===== */
+.app{display:grid;grid-template-columns:260px 1fr;min-height:100vh}
+.sidebar{position:sticky;top:0;height:100vh;overflow-y:auto;background:var(--surface);border-right:1px solid var(--border);padding:22px 16px 60px}
+.sidebar-brand{font-family:var(--font-head);font-weight:700;font-size:15px;padding:0 10px 14px;border-bottom:1px solid var(--border);margin-bottom:12px}
+.sidebar-brand span{display:block;font-size:11.5px;font-weight:500;color:var(--text-muted);font-family:var(--font-body);margin-top:3px}
+.nav-group{margin-bottom:6px}
+.nav-title{font-size:11px;font-weight:600;color:var(--text-muted);padding:10px 10px 4px;letter-spacing:.02em}
+.nav-link{display:block;padding:7px 10px;border-radius:8px;color:#334155;text-decoration:none;font-size:13.5px;transition:background .15s}
+.nav-link:hover{background:var(--surface-2)}
+.nav-link.active{background:#e8f0fe;color:var(--blue-dk);font-weight:600}
+.nav-link.sub{padding-left:20px;font-size:12.8px;color:#57657c}
+.nav-link.sub.active{color:var(--blue-dk)}
+main{min-width:0}
+.section{padding:56px 0;border-bottom:1px solid var(--border)}
+.section:last-of-type{border-bottom:none}
+.eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:12.5px;font-weight:600;color:var(--blue-dk);background:#e8f0fe;padding:5px 12px;border-radius:20px;margin-bottom:14px}
+.lead{font-size:16.5px;color:var(--text-muted);max-width:70ch}
+
+/* ===== Cards ===== */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:22px 24px;box-shadow:var(--shadow)}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+@media(max-width:900px){.grid-2,.grid-3{grid-template-columns:1fr}.app{grid-template-columns:1fr}.sidebar{position:relative;height:auto}}
+
+.concept-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;box-shadow:var(--shadow)}
+.concept-card h4{font-size:15px;margin-bottom:6px;display:flex;align-items:center;gap:8px}
+.concept-card .tag{font-size:10.5px;font-weight:600;padding:2px 8px;border-radius:20px;background:#eef2f8;color:var(--text-muted)}
+.concept-card .tag.live{background:#e6f7ec;color:var(--green-dk)}
+.concept-card .tag.concept{background:#fef3e2;color:var(--amber)}
+.concept-card p{font-size:13.8px;color:var(--text-muted);margin-bottom:8px}
+.concept-card ul{margin:0;padding-left:18px;font-size:13.5px;color:var(--text)}
+.concept-card li{margin-bottom:4px}
+
+/* ===== Definition / callout boxes ===== */
+.def-box{border-left:3px solid var(--blue);background:#f2f6ff;border-radius:0 8px 8px 0;padding:14px 18px;margin:16px 0}
+.def-box .label{font-size:11px;font-weight:700;color:var(--blue-dk);text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px}
+.usecase-box{border-left:3px solid var(--green);background:#f0faf3;border-radius:0 8px 8px 0;padding:14px 18px;margin:16px 0}
+.usecase-box .label{font-size:11px;font-weight:700;color:var(--green-dk);text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px}
+.warn-box{border-left:3px solid var(--amber);background:#fef8ee;border-radius:0 8px 8px 0;padding:14px 18px;margin:16px 0}
+.warn-box .label{font-size:11px;font-weight:700;color:var(--amber);text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px}
+
+/* ===== Comparison table ===== */
+table{width:100%;border-collapse:collapse;font-size:13.6px;margin:14px 0}
+th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--border);vertical-align:top}
+th{background:var(--surface-2);font-family:var(--font-head);font-weight:600;font-size:12.5px;color:#334155}
+tr:last-child td{border-bottom:none}
+td code{background:#eef2f8;padding:1px 6px;border-radius:4px;font-size:12.3px}
+
+/* ===== Code blocks ===== */
+.code-wrap{position:relative;margin:14px 0}
+.code-label{position:absolute;top:0;left:16px;transform:translateY(-50%);background:var(--code-bg);color:#94a3b8;font-size:10.5px;font-weight:600;padding:2px 10px;border-radius:4px;font-family:var(--font-body);letter-spacing:.03em}
+pre.cmd{background:var(--code-bg);color:var(--code-text);border-radius:10px;padding:18px 16px 14px;overflow-x:auto;font-size:12.8px;line-height:1.6;margin:0}
+pre.cmd .c1{color:#64748b}
+pre.cmd .kw{color:#7dd3fc}
+pre.cmd .str{color:#86efac}
+pre.cmd .flag{color:#fca5a5}
+.copy-btn{position:absolute;top:8px;right:10px;background:#1e293b;color:#cbd5e1;border:1px solid #334155;border-radius:6px;padding:4px 10px;font-size:11px;cursor:pointer;font-family:var(--font-body)}
+.copy-btn:hover{background:#334155}
+.copy-btn.copied{background:var(--green-dk);color:#fff;border-color:var(--green-dk)}
+.expected{background:#0b1220;border:1px dashed #334155;border-radius:10px;padding:14px 16px;margin:10px 0 0;font-size:12.4px;color:#a5b4cc}
+.expected .label{color:#7dd3fc;font-size:10.5px;font-weight:700;letter-spacing:.04em;margin-bottom:6px;display:block}
+
+/* ===== Lab cards ===== */
+.lab{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:0;box-shadow:var(--shadow);margin:22px 0;overflow:hidden}
+.lab-head{padding:18px 24px;background:linear-gradient(135deg,#f6f9ff,#eef4ff);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap}
+.lab-head h3{margin:0;font-size:17px;display:flex;align-items:center;gap:10px}
+.lab-num{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:8px;background:var(--blue);color:#fff;font-size:13px;font-weight:700;font-family:var(--font-head)}
+.lab-meta{display:flex;gap:8px;flex-wrap:wrap}
+.pill{font-size:11px;font-weight:600;padding:4px 10px;border-radius:20px;background:#fff;border:1px solid var(--border);color:var(--text-muted)}
+.pill.diff-1{color:var(--green-dk);border-color:#bfe8cc}
+.pill.diff-2{color:var(--amber);border-color:#f5d9a8}
+.pill.diff-3{color:var(--red);border-color:#f3bcbc}
+.prereq{background:#fff9ec;border-bottom:1px solid var(--border);padding:12px 24px;font-size:13px;color:#7a5518}
+.prereq b{color:#5c3f10}
+.lab-body{padding:22px 24px}
+.step{margin-bottom:22px}
+.step:last-child{margin-bottom:0}
+.step-title{font-family:var(--font-head);font-weight:600;font-size:14.5px;color:#0f1a2e;margin-bottom:6px;display:flex;align-items:center;gap:8px}
+.step-num{width:22px;height:22px;border-radius:50%;background:var(--surface-2);border:1px solid var(--border);display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--text-muted);flex-shrink:0}
+.step-desc{font-size:13.6px;color:var(--text-muted);margin-bottom:8px}
+.terminal-tag{display:inline-block;font-size:10.5px;font-weight:700;background:#1e293b;color:#fbbf24;padding:2px 8px;border-radius:4px;margin-bottom:6px;letter-spacing:.03em}
+.summary-box{background:#f0faf3;border:1px solid #bfe8cc;border-radius:10px;padding:16px 20px;margin-top:6px}
+.summary-box .label{font-size:11px;font-weight:700;color:var(--green-dk);letter-spacing:.04em;margin-bottom:6px}
+.summary-box ul{margin:0;padding-left:18px;font-size:13.3px}
+
+/* ===== Tabs ===== */
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--border);margin-bottom:14px}
+.tab-btn{background:none;border:none;padding:9px 16px;font-size:13px;font-weight:600;color:var(--text-muted);cursor:pointer;border-bottom:2px solid transparent;font-family:var(--font-body)}
+.tab-btn.active{color:var(--blue-dk);border-color:var(--blue)}
+.tab-panel{display:none}
+.tab-panel.active{display:block}
+
+/* ===== Hero: 3D animated ingress scene ===== */
+.hero{padding:70px 0 50px;overflow:hidden;background:radial-gradient(ellipse at top right,#e4ecfb,var(--bg) 60%)}
+.hero-grid{display:grid;grid-template-columns:1.05fr .95fr;gap:40px;align-items:center}
+@media(max-width:900px){.hero-grid{grid-template-columns:1fr}}
+.hero h1{font-size:37px;letter-spacing:-.01em}
+.hero .lead{font-size:16.5px}
+.stage{perspective:1100px;height:360px;display:flex;align-items:center;justify-content:center}
+.scene3d{position:relative;width:320px;height:280px;transform-style:preserve-3d;animation:spin 22s linear infinite}
+@media(prefers-reduced-motion:reduce){.scene3d{animation:none}}
+@keyframes spin{from{transform:rotateY(0deg) rotateX(8deg)}to{transform:rotateY(360deg) rotateX(8deg)}}
+.node3d{position:absolute;width:112px;padding:12px 14px;border-radius:12px;background:var(--surface);border:1px solid var(--border);box-shadow:0 10px 30px rgba(30,60,120,.18);font-size:11.5px;text-align:center;backface-visibility:hidden}
+.node3d b{display:block;font-family:var(--font-head);font-size:12.5px;color:#0f1a2e}
+.node3d span{color:var(--text-muted);font-size:10.3px}
+.n-client{transform:translate3d(-40px,-95px,90px)}
+.n-ingress{transform:translate3d(90px,-10px,-10px) rotateY(-25deg);background:#eaf1ff;border-color:#c7d9fb}
+.n-svc1{transform:translate3d(-100px,60px,60px) rotateY(20deg)}
+.n-svc2{transform:translate3d(60px,110px,-80px) rotateY(-15deg)}
+.n-pod1{transform:translate3d(-150px,140px,-30px) rotateY(35deg);width:96px;background:#f0faf3;border-color:#bfe8cc}
+.n-pod2{transform:translate3d(120px,10px,120px) rotateY(-40deg);width:96px;background:#f0faf3;border-color:#bfe8cc}
+.stage-caption{text-align:center;font-size:12px;color:var(--text-muted);margin-top:-6px}
+
+/* ===== SVG diagram containers ===== */
+.diagram{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px;box-shadow:var(--shadow);margin:18px 0}
+.diagram svg{width:100%;height:auto;display:block}
+.diagram-caption{font-size:12px;color:var(--text-muted);text-align:center;margin-top:8px}
+
+/* ===== Traffic flow canvas (animated) ===== */
+.flow-canvas-wrap{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px;box-shadow:var(--shadow);margin:18px 0}
+canvas{display:block;width:100%;border-radius:8px}
+
+/* ===== misc ===== */
+.badge-row{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0}
+.badge{font-size:11.5px;font-weight:600;background:var(--surface-2);border:1px solid var(--border);padding:5px 11px;border-radius:20px;color:var(--text-muted)}
+.toc-inline{display:flex;gap:10px;flex-wrap:wrap;margin:18px 0}
+.toc-inline a{font-size:12.8px;background:var(--surface);border:1px solid var(--border);padding:7px 13px;border-radius:20px;text-decoration:none;color:var(--text);box-shadow:var(--shadow)}
+.back-top{position:fixed;bottom:24px;right:24px;width:42px;height:42px;border-radius:50%;background:var(--blue);color:#fff;border:none;box-shadow:0 6px 18px rgba(37,99,235,.4);cursor:pointer;font-size:16px;opacity:0;pointer-events:none;transition:opacity .2s}
+.back-top.show{opacity:1;pointer-events:auto}
+footer{padding:34px 0;text-align:center;color:var(--text-muted);font-size:12.5px}
+.reveal{opacity:0;transform:translateY(14px);transition:opacity .5s ease,transform .5s ease}
+.reveal.in{opacity:1;transform:translateY(0)}
+</style>
+</head>
+<body>
+<div class="app">
+<!-- ===================== SIDEBAR ===================== -->
+<nav class="sidebar" id="sidebar">
+  <div class="sidebar-brand">Module 3<span>Ingress &amp; Traffic Management</span></div>
+
+  <div class="nav-group">
+    <div class="nav-title">Start</div>
+    <a class="nav-link" href="#hero" data-nav>Overview</a>
+    <a class="nav-link" href="#lab0" data-nav>Lab 0 · Cluster check</a>
+  </div>
+
+  <div class="nav-group">
+    <div class="nav-title">3.1 Ingress Architecture</div>
+    <a class="nav-link sub" href="#ingress-vs-service" data-nav>Ingress vs Service (LB)</a>
+    <a class="nav-link sub" href="#controller-role" data-nav>Role of Ingress Controller</a>
+    <a class="nav-link sub" href="#common-controllers" data-nav>NGINX · Traefik · Cloud ALB</a>
+    <a class="nav-link sub" href="#lab1" data-nav>Lab 1 · Install controller</a>
+  </div>
+
+  <div class="nav-group">
+    <div class="nav-title">3.2 Ingress Resources</div>
+    <a class="nav-link sub" href="#lab2" data-nav>Lab 2 · Deploy workloads</a>
+    <a class="nav-link sub" href="#path-routing" data-nav>Path-based routing</a>
+    <a class="nav-link sub" href="#lab3" data-nav>Lab 3 · Path routing</a>
+    <a class="nav-link sub" href="#host-routing" data-nav>Host-based routing</a>
+    <a class="nav-link sub" href="#lab4" data-nav>Lab 4 · Host routing</a>
+    <a class="nav-link sub" href="#tls-termination" data-nav>TLS termination</a>
+    <a class="nav-link sub" href="#lab5" data-nav>Lab 5 · TLS</a>
+    <a class="nav-link sub" href="#annotations" data-nav>Annotations deep dive</a>
+    <a class="nav-link sub" href="#lab6" data-nav>Lab 6 · Annotations</a>
+    <a class="nav-link sub" href="#bluegreen-canary" data-nav>Blue/Green &amp; Canary</a>
+    <a class="nav-link sub" href="#lab7" data-nav>Lab 7 · Canary</a>
+    <a class="nav-link sub" href="#lab8" data-nav>Lab 8 · Blue/Green</a>
+  </div>
+
+  <div class="nav-group">
+    <div class="nav-title">Wrap-up</div>
+    <a class="nav-link" href="#reference" data-nav>Annotation reference</a>
+    <a class="nav-link" href="#troubleshooting" data-nav>Troubleshooting</a>
+  </div>
+</nav>
+
+<!-- ===================== MAIN ===================== -->
+<main>
+
+<!-- ===================== HERO ===================== -->
+<section class="hero" id="hero">
+  <div class="container hero-grid">
+    <div>
+      <span class="eyebrow">● Module 3 — builds on your 3-node cluster</span>
+      <h1>Ingress &amp; Traffic Management</h1>
+      <p class="lead">Every request that enters your cluster from the outside world passes through one of these
+      decisions. This module teaches how to route it, secure it, and shift it between versions — without
+      touching the client.</p>
+      <div class="badge-row">
+        <span class="badge">9 hands-on labs</span>
+        <span class="badge">1 running scenario: TechMart</span>
+        <span class="badge">ingress-nginx v1.15.1</span>
+        <span class="badge">Works offline (self-signed TLS)</span>
+      </div>
+    </div>
+    <div>
+      <div class="stage">
+        <div class="scene3d">
+          <div class="node3d n-client"><b>Client</b><span>browser / curl</span></div>
+          <div class="node3d n-ingress"><b>Ingress</b><span>controller + rules</span></div>
+          <div class="node3d n-svc1"><b>Service</b><span>frontend-svc</span></div>
+          <div class="node3d n-svc2"><b>Service</b><span>api-svc</span></div>
+          <div class="node3d n-pod1"><b>Pod</b><span>nginx replica</span></div>
+          <div class="node3d n-pod2"><b>Pod</b><span>httpd replica</span></div>
+        </div>
+      </div>
+      <p class="stage-caption">Rotating request path — client → Ingress → Service → Pod</p>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== LAB 0 ===================== -->
+<section class="section" id="lab0-wrap">
+ <div class="container">
+  <div class="lab reveal" id="lab0">
+    <div class="lab-head">
+      <h3><span class="lab-num">0</span>Prerequisites — confirm your cluster is ready</h3>
+      <div class="lab-meta"><span class="pill diff-1">5 min</span><span class="pill">All 3 nodes</span></div>
+    </div>
+    <div class="prereq"><b>Before you start:</b> run this on the node where your kubeconfig is set up. No changes are made to the cluster in this lab.</div>
+    <div class="lab-body">
+      <div class="step">
+        <div class="step-title"><span class="step-num">1</span>Confirm all 3 nodes are Ready</div>
+        <div class="code-wrap"><span class="code-label">bash</span><button class="copy-btn" data-copy>Copy</button>
+<pre class="cmd">kubectl get nodes -o wide</pre></div>
+        <div class="expected"><span class="label">EXPECTED OUTPUT</span>NAME     STATUS   ROLES           AGE   VERSION
+node-1   Ready    control-plane   —     v1.3x.x
+node-2   Ready    &lt;none&gt;          —     v1.3x.x
+node-3   Ready    &lt;none&gt;          —     v1.3x.x</div>
+      </div>
+      <div class="step">
+        <div class="step-title"><span class="step-num">2</span>Check whether an Ingress controller already exists</div>
+        <div class="step-desc">Avoids installing a second controller by accident.</div>
+        <div class="code-wrap"><span class="code-label">bash</span><button class="copy-btn" data-copy>Copy</button>
+<pre class="cmd">kubectl get pods -A | grep -Ei 'ingress|traefik|haproxy'</pre></div>
+      </div>
+      <div class="step">
+        <div class="step-title"><span class="step-num">3</span>Create the working namespace for this module</div>
+        <div class="code-wrap"><span class="code-label">bash</span><button class="copy-btn" data-copy>Copy</button>
+<pre class="cmd">kubectl create namespace techmart</pre></div>
+        <div class="expected"><span class="label">EXPECTED OUTPUT</span>namespace/techmart created</div>
+      </div>
+      <div class="summary-box"><div class="label">✓ CHECK BEFORE CONTINUING</div>
+        <ul><li>All 3 nodes show <code>STATUS: Ready</code></li><li>No pre-existing ingress controller (or you know which one you're reusing)</li><li><code>techmart</code> namespace exists</li></ul>
+      </div>
+    </div>
+  </div>
+ </div>
+</section>
+
+<!-- ===================== 3.1 INGRESS ARCHITECTURE ===================== -->
+<section class="section" id="ingress-vs-service">
+ <div class="container">
+  <span class="eyebrow">3.1 Ingress Architecture</span>
+  <h2>Ingress vs Service (LoadBalancer)</h2>
+  <p class="lead">Both get outside traffic into your cluster. They solve it at different layers, and mixing them up is the single most common early design mistake.</p>
+
+  <div class="diagram">
+    <svg viewBox="0 0 900 260" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#5b6b84"/></marker>
+      </defs>
+      <text x="230" y="26" text-anchor="middle" font-family="Space Grotesk" font-weight="600" font-size="14" fill="#0f1a2e">LoadBalancer Service (one per app)</text>
+      <circle cx="60" cy="90" r="16" fill="#eaf1ff" stroke="#c7d9fb"/><text x="60" y="94" text-anchor="middle" font-size="10" fill="#334155">Client</text>
+      <line x1="76" y1="90" x2="140" y2="90" stroke="#5b6b84" stroke-width="1.5" marker-end="url(#arrow)"/>
+      <rect x="140" y="70" width="110" height="40" rx="8" fill="#fff" stroke="#dfe6f0"/><text x="195" y="94" text-anchor="middle" font-size="11" fill="#1e293b">Cloud LB #1</text>
+      <line x1="250" y1="90" x2="320" y2="90" stroke="#5b6b84" stroke-width="1.5" marker-end="url(#arrow)"/>
+      <rect x="320" y="70" width="90" height="40" rx="8" fill="#f0faf3" stroke="#bfe8cc"/><text x="365" y="94" text-anchor="middle" font-size="11" fill="#0f7a37">svc-frontend</text>
+      <circle cx="60" cy="190" r="16" fill="#eaf1ff" stroke="#c7d9fb"/><text x="60" y="194" text-anchor="middle" font-size="10" fill="#334155">Client</text>
+      <line x1="76" y1="190" x2="140" y2="190" stroke="#5b6b84" stroke-width="1.5" marker-end="url(#arrow)"/>
+      <rect x="140" y="170" width="110" height="40" rx="8" fill="#fff" stroke="#dfe6f0"/><text x="195" y="194" text-anchor="middle" font-size="11" fill="#1e293b">Cloud LB #2</text>
+      <line x1="250" y1="190" x2="320" y2="190" stroke="#5b6b84" stroke-width="1.5" marker-end="url(#arrow)"/>
+      <rect x="320" y="170" width="90" height="40" rx="8" fill="#f0faf3" stroke="#bfe8cc"/><text x="365" y="194" text-anchor="middle" font-size="11" fill="#0f7a37">svc-api</text>
+      <text x="195" y="235" text-anchor="middle" font-size="10.5" fill="#94a3b8">2 apps → 2 external IPs / 2 cloud LB bills · no shared TLS or path rules</text>
+
+      <line x1="450" y1="30" x2="450" y2="240" stroke="#e2e8f0" stroke-width="1"/>
+
+      <text x="680" y="26" text-anchor="middle" font-family="Space Grotesk" font-weight="600" font-size="14" fill="#0f1a2e">Ingress (one entry point, many apps)</text>
+      <circle cx="500" cy="140" r="16" fill="#eaf1ff" stroke="#c7d9fb"/><text x="500" y="144" text-anchor="middle" font-size="10" fill="#334155">Client</text>
+      <line x1="516" y1="140" x2="580" y2="140" stroke="#5b6b84" stroke-width="1.5" marker-end="url(#arrow)"/>
+      <rect x="580" y="120" width="120" height="42" rx="8" fill="#eaf1ff" stroke="#c7d9fb"/><text x="640" y="139" text-anchor="middle" font-size="10.5" fill="#1d4ed8">Ingress</text><text x="640" y="153" text-anchor="middle" font-size="9" fill="#5b6b84">controller + rules</text>
+      <line x1="700" y1="130" x2="780" y2="90" stroke="#5b6b84" stroke-width="1.5" marker-end="url(#arrow)"/>
+      <rect x="780" y="70" width="90" height="36" rx="8" fill="#f0faf3" stroke="#bfe8cc"/><text x="825" y="92" text-anchor="middle" font-size="10.5" fill="#0f7a37">svc-frontend</text>
+      <line x1="700" y1="150" x2="780" y2="190" stroke="#5b6b84" stroke-width="1.5" marker-end="url(#arrow)"/>
+      <rect x="780" y="172" width="90" height="36" rx="8" fill="#f0faf3" stroke="#bfe8cc"/><text x="825" y="194" text-anchor="middle" font-size="10.5" fill="#0f7a37">svc-api</text>
+      <text x="680" y="235" text-anchor="middle" font-size="10.5" fill="#94a3b8">1 external IP · host/path rules pick the app · one place for TLS</text>
+    </svg>
+    <div class="diagram-caption">A Service of type LoadBalancer exposes one app per external IP. An Ingress is a single entry point that routes many apps by host or path.</div>
+  </div>
+
+  <div class="grid-2">
+    <div class="def-box"><div class="label">Definition</div>
+      A <b>Service (type: LoadBalancer)</b> asks the cloud provider for one external IP wired straight to one Service.
+      It works at L4 (TCP/UDP) — it forwards packets, it does not read HTTP paths, hostnames, or headers.
+    </div>
+    <div class="def-box"><div class="label">Definition</div>
+      An <b>Ingress</b> is a set of L7 (HTTP/HTTPS) routing rules. It needs an <b>Ingress Controller</b> running in
+      the cluster to actually enforce those rules — the Ingress object alone does nothing.
+    </div>
+  </div>
+
+  <table>
+    <tr><th></th><th>Service (LoadBalancer)</th><th>Ingress</th></tr>
+    <tr><td>OSI layer</td><td>L4 — TCP/UDP</td><td>L7 — HTTP/HTTPS</td></tr>
+    <tr><td>Routing basis</td><td>IP + port only</td><td>Hostname, path, headers</td></tr>
+    <tr><td>External IPs needed</td><td>One per Service</td><td>One, shared by every app</td></tr>
+    <tr><td>TLS termination</td><td>Not aware of it (pass-through only)</td><td>Native — terminates at the controller</td></tr>
+    <tr><td>Cost on cloud</td><td>One LB per Service = one bill per Service</td><td>One LB in front of the Ingress controller = one bill total</td></tr>
+    <tr><td>On bare metal</td><td>Stays <code>&lt;pending&gt;</code> without MetalLB</td><td>Controller exposed via <code>NodePort</code> or <code>hostNetwork</code> — no cloud dependency</td></tr>
+  </table>
+
+  <div class="usecase-box"><div class="label">Real-world use case</div>
+    An e-commerce platform runs <code>frontend</code>, <code>api</code>, <code>admin</code> and <code>checkout</code> as separate
+    microservices. With LoadBalancer Services that's 4 external IPs, 4 cloud LB bills, and 4 places to configure TLS.
+    With one Ingress, it's one IP, one certificate, one set of routing rules — <code>shop.site.com/</code>, <code>/api</code>,
+    <code>/admin</code> all point to different backends behind the same front door.
+  </div>
+ </div>
+</section>
+
+<section class="section" id="controller-role">
+ <div class="container">
+  <h2>Role of the Ingress Controller</h2>
+  <p class="lead">The Ingress <em>resource</em> is just a YAML wishlist. Something has to read it and actually configure a reverse proxy — that's the controller's job.</p>
+
+  <div class="diagram">
+    <svg viewBox="0 0 900 200" xmlns="http://www.w3.org/2000/svg">
+      <defs><marker id="a2" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#5b6b84"/></marker></defs>
+      <rect x="20" y="70" width="150" height="50" rx="10" fill="#fff" stroke="#dfe6f0"/><text x="95" y="90" text-anchor="middle" font-size="11" fill="#1e293b">You write an</text><text x="95" y="105" text-anchor="middle" font-size="11" font-weight="600" fill="#1e293b">Ingress YAML</text>
+      <line x1="170" y1="95" x2="250" y2="95" stroke="#5b6b84" stroke-width="1.5" marker-end="url(#a2)"/>
+      <rect x="250" y="65" width="170" height="60" rx="10" fill="#eaf1ff" stroke="#c7d9fb"/><text x="335" y="90" text-anchor="middle" font-size="11" fill="#1d4ed8">Kubernetes API</text><text x="335" y="106" text-anchor="middle" font-size="10" fill="#5b6b84">stores the object</text>
+      <line x1="420" y1="95" x2="500" y2="95" stroke="#5b6b84" stroke-width="1.5" marker-end="url(#a2)"/>
+      <rect x="500" y="55" width="190" height="80" rx="10" fill="#f0faf3" stroke="#bfe8cc"/>
+      <text x="595" y="80" text-anchor="middle" font-size="11" font-weight="600" fill="#0f7a37">Ingress Controller</text>
+      <text x="595" y="96" text-anchor="middle" font-size="9.5" fill="#3f7a52">watches Ingress objects</text>
+      <text x="595" y="110" text-anchor="middle" font-size="9.5" fill="#3f7a52">generates reverse-proxy config</text>
+      <text x="595" y="124" text-anchor="middle" font-size="9.5" fill="#3f7a52">reloads without downtime</text>
+      <line x1="690" y1="95" x2="770" y2="95" stroke="#5b6b84" stroke-width="1.5" marker-end="url(#a2)"/>
+      <rect x="770" y="70" width="110" height="50" rx="10" fill="#fff" stroke="#dfe6f0"/><text x="825" y="90" text-anchor="middle" font-size="11" fill="#1e293b">Traffic reaches</text><text x="825" y="105" text-anchor="middle" font-size="11" font-weight="600" fill="#1e293b">the right Pod</text>
+      <text x="450" y="175" text-anchor="middle" font-size="10.5" fill="#94a3b8">No controller running → the Ingress object is stored but nothing enforces it. Traffic never routes.</text>
+    </svg>
+    <div class="diagram-caption">The controller is the missing piece between "I wrote a routing rule" and "traffic is actually routed."</div>
+  </div>
+
+  <div class="grid-3">
+    <div class="concept-card"><h4>Watches</h4><p>Continuously watches the API server for Ingress, Service, Secret, and Endpoint changes relevant to it.</p></div>
+    <div class="concept-card"><h4>Translates</h4><p>Converts Ingress rules into native reverse-proxy config — an <code>nginx.conf</code> block, a Traefik dynamic config, or a cloud ALB listener rule.</p></div>
+    <div class="concept-card"><h4>Reloads</h4><p>Applies the new config with (ideally) zero dropped connections — this is what "hot reload" means for ingress-nginx.</p></div>
+  </div>
+
+  <div class="warn-box"><div class="label">Common mistake</div>
+    Applying an <code>Ingress</code> manifest with <b>no controller installed</b> gives no error — <code>kubectl apply</code>
+    succeeds because the object is valid YAML. Nothing tells you traffic isn't routing until you test it. Always
+    confirm a controller Pod is <code>Running</code> first (Lab 1).
+  </div>
+ </div>
+</section>
+
+<section class="section" id="common-controllers">
+ <div class="container">
+  <h2>Common Ingress Controllers</h2>
+  <p class="lead">The Ingress <em>API</em> is standard. What each controller does with it — and which annotations it understands — is not. This module installs NGINX live; Traefik and Cloud ALB are covered conceptually so you recognize them in the wild.</p>
+
+  <div class="grid-3">
+    <div class="concept-card">
+      <h4>NGINX Ingress <span class="tag live">Live lab</span></h4>
+      <p>The most widely deployed controller. Runs as Pods inside the cluster; config is annotation-driven.</p>
+      <ul><li>Works identically on any cluster — cloud or bare metal</li><li>Huge annotation surface (rewrites, canary, rate limits, auth)</li><li>Maintained by the Kubernetes project itself</li></ul>
+    </div>
+    <div class="concept-card">
+      <h4>Traefik <span class="tag concept">Conceptual</span></h4>
+      <p>A Go-native reverse proxy with automatic service discovery and a strong Let's Encrypt integration story.</p>
+      <ul><li>Config via <code>IngressRoute</code> CRDs, not just annotations</li><li>Built-in dashboard for live routing state</li><li>Popular in Docker-first shops migrating to k8s</li></ul>
+    </div>
+    <div class="concept-card">
+      <h4>Cloud ALB / GCE <span class="tag concept">Conceptual</span></h4>
+      <p>The cloud provider's own load balancer, driven directly by the Ingress object (AWS ALB Ingress Controller / GKE Ingress).</p>
+      <ul><li>No proxy Pods to manage — the cloud runs it for you</li><li>Ties you to that cloud's LB feature set</li><li>Usually billed per-LB-hour + data processed</li></ul>
+    </div>
+  </div>
+
+  <div class="usecase-box"><div class="label">Real-world use case</div>
+    A platform team standardizes on <b>NGINX Ingress</b> for portability — the same manifests work in their on-prem
+    kubeadm cluster and their AWS EKS cluster. A team fully committed to AWS instead picks the <b>ALB Ingress
+    Controller</b> to get native AWS WAF and Shield integration, accepting the trade-off of losing portability.
+  </div>
+ </div>
+</section>
+
+<!-- ===================== LAB 1 ===================== -->
+<section class="section" id="lab1-wrap">
+ <div class="container">
+  <div class="lab reveal" id="lab1">
+    <div class="lab-head">
+      <h3><span class="lab-num">1</span>Install the NGINX Ingress Controller</h3>
+      <div class="lab-meta"><span class="pill diff-1">10 min</span><span class="pill">Bare-metal profile</span></div>
+    </div>
+    <div class="prereq"><b>Uses:</b> official <code>ingress-nginx</code> baremetal manifest, exposed via <code>NodePort</code> — no cloud LoadBalancer or MetalLB required, so this works on your 3-node kubeadm cluster as-is.</div>
+    <div class="lab-body">
+      <div class="step">
+        <div class="step-title"><span class="step-num">1</span>Apply the controller manifest</div>
+        <div class="step-desc">This creates the <code>ingress-nginx</code> namespace, RBAC, the controller Deployment, and admission webhook.</div>
+        <div class="code-wrap"><span class="code-label">bash</span><button class="copy-btn" data-copy>Copy</button>
+<pre class="cmd">kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.15.1/deploy/static/provider/baremetal/deploy.yaml</pre></div>
+      </div>
+      <div class="step">
+        <div class="step-title"><span class="step-num">2</span>Wait for the controller Pod to be ready</div>
+        <div class="code-wrap"><span class="code-label">bash</span><button class="copy-btn" data-copy>Copy</button>
+<pre class="cmd">kubectl wait --namespace ingress-nginx \
+  --for=condition=ready pod \
+  --selector=app.kubernetes.io/component=controller \
+  --timeout=180s</pre></div>
+        <div class="expected"><span class="label">EXPECTED OUTPUT</span>pod/ingress-nginx-controller-xxxxxxxxxx-xxxxx condition met</div>
+      </div>
+      <div class="step">
+        <div class="step-title"><span class="step-num">3</span>Find the NodePort the controller is listening on</div>
+        <div class="code-wrap"><span class="code-label">bash</span><button class="copy-btn" data-copy>Copy</button>
+<pre class="cmd">kubectl get svc ingress-nginx-controller -n ingress-nginx</pre></div>
+        <div class="expected"><span class="label">EXPECTED OUTPUT</span>NAME                       TYPE       CLUSTER-IP     PORT(S)
+ingress-nginx-controller   NodePort   10.x.x.x       80:3XXXX/TCP,443:3YYYY/TCP</div>
+        <div class="step-desc" style="margin-top:8px">Note the two NodePort numbers (3XXXX for HTTP, 3YYYY for HTTPS) — any node's IP on these ports reaches the controller. You'll also use <code>kubectl port-forward</code> in later labs so verification never depends on which NodePort was assigned.</div>
+      </div>
+      <div class="summary-box"><div class="label">✓ KEY LEARNING</div>
+        <ul><li>The controller is just Pods — <code>kubectl get pods -n ingress-nginx</code> is your first debugging stop for everything in this module</li><li>On bare metal there's no cloud LB, so <code>NodePort</code> (or <code>hostNetwork</code>) is how traffic reaches it — this is normal, not a workaround</li></ul>
+      </div>
+    </div>
+  </div>
+ </div>
+</section>
+
+<!-- ===================== 3.2 INTRO + LAB 2 ===================== -->
+<section class="section" id="resources-intro">
+ <div class="container">
+  <span class="eyebrow">3.2 Ingress Resources — Deep Dive</span>
+  <h2>The scenario: TechMart</h2>
+  <p class="lead">Every lab from here on builds one running app instead of disconnected snippets. By the end you'll have a single Ingress-fronted platform with path routing, host routing, TLS, and a live canary rollout.</p>
+  <div class="grid-3">
+    <div class="concept-card"><h4>frontend <span class="tag live">nginx:1.25</span></h4><p>The storefront. Reached at <code>/</code>.</p></div>
+    <div class="concept-card"><h4>api (v1 / v2) <span class="tag live">httpd:2.4 · nginx:1.24</span></h4><p>Two versions of the same API — used later for canary and blue/green. Reached at <code>/api</code>.</p></div>
+    <div class="concept-card"><h4>admin <span class="tag live">busybox:1.36</span></h4><p>Internal admin panel. Reached at <code>/admin</code>.</p></div>
+  </div>
+ </div>
+</section>
+
+<section class="section" id="lab2-wrap">
+ <div class="container">
+  <div class="lab reveal" id="lab2">
+    <div class="lab-head">
+      <h3><span class="lab-num">2</span>Deploy the TechMart workloads</h3>
+      <div class="lab-meta"><span class="pill diff-1">10 min</span><span class="pill">namespace: techmart</span></div>
+    </div>
+    <div class="prereq"><b>Uses:</b> validated, publicly available images only — <code>nginx:1.25</code>, <code>nginx:1.24</code>, <code>httpd:2.4</code>, <code>busybox:1.36</code>. No image pull secrets needed.</div>
+    <div class="lab-body">
+      <div class="step">
+        <div class="step-title"><span class="step-num">1</span>Create ConfigMaps with distinct page content per service</div>
+        <div class="step-desc">This lets you visually confirm which backend answered a request just by reading the page body.</div>
+        <div class="code-wrap"><span class="code-label">bash</span><button class="copy-btn" data-copy>Copy</button>
+<pre class="cmd">kubectl -n techmart create configmap frontend-html \
+  --from-literal=index.html='&lt;h1&gt;TechMart Storefront&lt;/h1&gt;&lt;p&gt;served by frontend&lt;/p&gt;'
+
+kubectl -n techmart create configmap api-v1-html \
+  --from-literal=index.html='&lt;h1&gt;API v1&lt;/h1&gt;&lt;p&gt;served by api-v1 (blue)&lt;/p&gt;'
+
+kubectl -n techmart create configmap api-v2-html \
+  --from-literal=index.html='&lt;h1&gt;API v2&lt;/h1&gt;&lt;p&gt;served by api-v2 (green / canary)&lt;/p&gt;'
+
+kubectl -n techmart create configmap admin-html \
+  --from-literal=index.html='&lt;h1&gt;TechMart Admin&lt;/h1&gt;&lt;p&gt;internal only&lt;/p&gt;'</pre></div>
+      </div>
+      <div class="step">
+        <div class="step-title"><span class="step-num">2</span>Deploy frontend, api-v1 (blue), api-v2 (green), and admin</div>
+        <div class="code-wrap"><span class="code-label">techmart-workloads.yaml</span><button class="copy-btn" data-copy>Copy</button>
+<pre class="cmd">apiVersion: apps/v1
+kind: Deployment
+metadata: {name: frontend, namespace: techmart}
+spec:
+  replicas: 2
+  selector: {matchLabels: {app: frontend}}
+  template:
+    metadata: {labels: {app: frontend}}
+    spec:
+      containers:
+      - name: frontend
+        image: nginx:1.25
+        ports: [{containerPort: 80}]
+        volumeMounts: [{name: html, mountPath: /usr/share/nginx/html}]
+      volumes: [{name: html, configMap: {name: frontend-html}}]
+---
+apiVersion: v1
+kind: Service
+metadata: {name: frontend-svc, namespace: techmart}
+spec:
+  selector: {app: frontend}
+  ports: [{port: 80, targetPort: 80}]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: api-v1, namespace: techmart}
+spec:
+  replicas: 2
+  selector: {matchLabels: {app: api, version: blue}}
+  template:
+    metadata: {labels: {app: api, version: blue}}
+    spec:
+      containers:
+      - name: api
+        image: httpd:2.4
+        ports: [{containerPort: 80}]
+        volumeMounts: [{name: html, mountPath: /usr/local/apache2/htdocs}]
+      volumes: [{name: html, configMap: {name: api-v1-html}}]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: api-v2, namespace: techmart}
+spec:
+  replicas: 2
+  selector: {matchLabels: {app: api, version: green}}
+  template:
+    metadata: {labels: {app: api, version: green}}
+    spec:
+      containers:
+      - name: api
+        image: nginx:1.24
+        ports: [{containerPort: 80}]
+        volumeMounts: [{name: html, mountPath: /usr/share/nginx/html}]
+      volumes: [{name: html, configMap: {name: api-v2-html}}]
+---
+# api-svc starts pointed at "blue" (v1). Lab 8 flips this selector for Blue/Green.
+apiVersion: v1
+kind: Service
+metadata: {name: api-svc, namespace: techmart}
+spec:
+  selector: {app: api, version: blue}
+  ports: [{port: 80, targetPort: 80}]
+---
+# api-v2-svc is used directly by Lab 7's canary Ingress (weighted split), independent of api-svc.
+apiVersion: v1
+kind: Service
+metadata: {name: api-v2-svc, namespace: techmart}
+spec:
+  selector: {app: api, version: green}
+  ports: [{port: 80, targetPort: 80}]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: admin, namespace: techmart}
+spec:
+  replicas: 1
+  selector: {matchLabels: {app: admin}}
+  template:
+    metadata: {labels: {app: admin}}
+    spec:
+      containers:
+      - name: admin
+        image: busybox:1.36
+        command: ["sh","-c","busybox httpd -f -p 8080 -h /www"]
+        ports: [{containerPort: 8080}]
+        volumeMounts: [{name: html, mountPath: /www}]
+      volumes: [{name: html, configMap: {name: admin-html}}]
+---
+apiVersion: v1
+kind: Service
+metadata: {name: admin-svc, namespace: techmart}
+spec:
+  selector: {app: admin}
+  ports: [{port: 80, targetPort: 8080}]</pre></div>
+        <div class="step-desc" style="margin-top:8px">Save as <code>techmart-workloads.yaml</code> and apply:</div>
+        <div class="code-wrap"><span class="code-label">bash</span><button class="copy-btn" data-copy>Copy</button>
+<pre class="cmd">kubectl apply -f techmart-workloads.yaml</pre></div>
+      </div>
+      <div class="step">
+        <div class="step-title"><span class="step-num">3</span>Verify all Pods are Running and Services have endpoints</div>
+        <div class="code-wrap"><span class="code-label">bash</span><button class="copy-btn" data-copy>Copy</button>
+<pre class="cmd">kubectl -n techmart get pods -o wide
+kubectl -n techmart get endpoints</pre></div>
+        <div class="expected"><span class="label">EXPECTED OUTPUT</span>frontend-xxxxxxxxx-xxxxx   1/1   Running
+frontend-xxxxxxxxx-xxxxx   1/1   Running
+api-v1-xxxxxxxxx-xxxxx     1/1   Running
+api-v1-xxxxxxxxx-xxxxx     1/1   Running
+api-v2-xxxxxxxxx-xxxxx     1/1   Running
+api-v2-xxxxxxxxx-xxxxx     1/1   Running
+admin-xxxxxxxxx-xxxxx      1/1   Running
+
+<span class="c1" style="color:#64748b"># each Service below must list Pod IPs, not &lt;none&gt; — &lt;none&gt; means the selector doesn't match any Pod label</span>
+NAME           ENDPOINTS
+frontend-svc   10.244.x.x:80,10.244.x.x:80
+api-svc        10.244.x.x:80
+api-v2-svc     10.244.x.x:80
+admin-svc      10.244.x.x:8080</div>
+      </div>
+      <div class="summary-box"><div class="label">✓ KEY LEARNING</div>
+        <ul><li>A Service with no matching Pod labels shows <code>ENDPOINTS: &lt;none&gt;</code> — this is the #1 cause of "Ingress returns 502" and is worth checking before touching the Ingress object at all</li><li><code>api-svc</code> and <code>api-v2-svc</code> are deliberately separate — Lab 7 (canary) splits traffic between them at the Ingress; Lab 8 (blue/green) instead repoints <code>api-svc</code>'s selector</li></ul>
+      </div>
+    </div>
+  </div>
+ </div>
+</section>
+
+<!-- ===================== PATH-BASED ROUTING ===================== -->
+<section class="section" id="path-routing">
+ <div class="container">
+  <h2>Path-based routing</h2>
+  <p class="lead">One hostname, multiple applications — the URL path decides which Service receives the request.</p>
+
+  <div class="def-box"><div class="label">Definition</div>
+    Each <code>path</code> entry in an Ingress rule maps a URL prefix to a backend Service. The controller matches
+    the incoming request path against these rules top-to-bottom (most specific match wins) and forwards accordingly.
+  </div>
+
+  <div class="usecase-box"><div class="label">Real-world use case</div>
+    <code>shop.techmart.local/</code> serves the storefront, <code>/api</code> serves the backend API, and
+    <code>/admin</code> serves the internal admin panel — three different applications, three different teams,
+    one domain and one certificate.
+  </div>
+ </div>
+</section>
+
+<section class="section" id="lab3-wrap">
+ <div class="container">
+  <div class="lab reveal" id="lab3">
+    <div class="lab-head">
+      <h3><span class="lab-num">3</span>Path-based routing across three apps</h3>
+      <div class="lab-meta"><span class="pill diff-2">15 min</span><span class="pill">host: shop.techmart.local</span></div>
+    </div>
+    <div class="prereq"><b>Builds on:</b> Lab 2's workloads. Verification uses <code>port-forward</code> + a Host header, so it works with no DNS and no <code>/etc/hosts</code> edit — the same method works on kubeadm, kind, or minikube.</div>
+    <div class="lab-body">
+      <div class="step">
+        <div class="step-title"><span class="step-num">1</span>Create the path-based Ingress</div>
+        <div class="step-desc"><code>pathType: Prefix</code> matches the path and everything under it. The <code>rewrite-target</code> annotation strips the prefix before it reaches httpd/nginx, since those backends don't know they're mounted at <code>/api</code> or <code>/admin</code>.</div>
+        <div class="code-wrap"><span class="code-label">techmart-path-ingress.yaml</span><button class="copy-btn" data-copy>Copy</button>
+<pre class="cmd">apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: techmart-path
+  namespace: techmart
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: shop.techmart.local
+    http:
+      paths:
+      - path: /()(.*)
+        pathType: ImplementationSpecific
+        backend: {service: {name: frontend-svc, port: {number: 80}}}
+      - path: /api(/|$)(.*)
+        pathType: ImplementationSpecific
+        backend: {service: {name: api-svc, port: {number: 80}}}
+      - path: /admin(/|$)(.*)
+        pathType: ImplementationSpecific
+        backend: {service: {name: admin-svc, port: {number: 80}}}</pre></div>
+        <div class="code-wrap"><span class="code-label">bash</span><button class="copy-btn" data-copy>Copy</button>
+<pre class="cmd">kubectl apply -f techmart-path-ingress.yaml
+kubectl -n techmart get ingress techmart-path</pre></div>
+        <div class="expected"><span class="label">EXPECTED OUTPUT</span>NAME            CLASS   HOSTS                  ADDRESS   PORTS   AGE
+techmart-path   nginx   shop.techmart.local             80      5s</div>
+      </div>
+      <div class="step">
+        <div class="step-title"><span class="step-num">2</span>Port-forward the controller so you can reach it without a NodePort or DNS</div>
+        <div class="terminal-tag">TERMINAL 1 — leave running</div>
+        <div class="code-wrap"><span class="code-label">bash</span><button class="copy-btn" data-copy>Copy</button>
+<pre class="cmd">kubectl port-forward -n ingress-nginx svc/ingress-nginx-controller 8080:80</pre></div>
+      </div>
+      <div class="step">
+        <div class="step-title"><span class="step-num">3</span>Hit each path with the correct Host header</div>
+        <div class="terminal-tag">TERMINAL 2</div>
+        <div class="code-wrap"><span class="code-label">bash</span><button class="copy-btn" data-copy>Copy</button>
+<pre class="cmd">curl -s -H "Host: shop.techmart.local" http://localhost:8080/
+curl -s -H "Host: shop.techmart.local" http://localhost:8080/api
+curl -s -H "Host: shop.techmart.local" http://localhost:8080/admin</pre></div>
+        <div class="expected"><span class="label">EXPECTED OUTPUT</span>&lt;h1&gt;TechMart Storefront&lt;/h1&gt;&lt;p&gt;served by frontend&lt;/p&gt;
+&lt;h1&gt;API v1&lt;/h1&gt;&lt;p&gt;served by api-v1 (blue)&lt;/p&gt;
+&lt;h1&gt;TechMart Admin&lt;/h1&gt;&lt;p&gt;internal only&lt;/p&gt;</div>
+      </div>
+      <div class="summary-box"><div class="label">✓ KEY LEARNING</div>
+        <ul><li>The Host header — not the URL you type — is what the Ingress controller matches against <code>spec.rules[].host</code>. That's why <code>curl</code> with <code>-H "Host: ..."</code> works with zero DNS setup</li><li>Regex capture groups + <code>rewrite-target: /$2</code> is the standard NGINX-ingress pattern for stripping a path prefix — check this first whenever a routed app returns 404 for everything</li></ul>
+      </div>
+    </div>
+  </div>
+ </div>
+</section>
+
+<!-- ===================== HOST-BASED ROUTING ===================== -->
+<section class="section" id="host-routing">
+ <div class="container">
+  <h2>Host-based routing</h2>
+  <p class="lead">Instead of splitting by path, split by subdomain or domain entirely — each hostname gets its own rule block, potentially pointing at completely different backends and even different TLS certs.</p>
+
+  <div class="def-box"><div class="label">Definition</div>
+    A single Ingress (or several) can declare multiple <code>host</code> entries under <code>spec.rules</code>. The
+    controller inspects the HTTP <code>Host</code> header (or SNI, for TLS) and picks the matching rule block —
+    each host can have its own independent set of paths.
+  </div>
+
+  <div class="usecase-box"><div class="label">Real-world use case</div>
+    <code>shop.techmart.com</code> and <code>api.techmart.com</code> are operated by different teams with different
+    release cadences. Host-based routing lets each team own its Ingress object independently, while both still
+    share the same controller, IP, and TLS cert infrastructure.
+  </div>
+ </div>
+</section>
+
+<section class="section" id="lab4-wrap">
+ <div class="container">
+  <div class="lab reveal" id="lab4">
+    <div class="lab-head">
+      <h3><span class="lab-num">4</span>Split shop and api onto separate hostnames</h3>
+      <div class="lab-meta"><span class="pill diff-2">10 min</span><span class="pill">2 hosts, 1 controller</span></div>
+    </div>
+    <div class="prereq"><b>Builds on:</b> Lab 2's workloads. This Ingress coexists with <code>techmart-path</code> from Lab 3 — different hostnames, no conflict.</div>
+    <div class="lab-body">
+      <div class="step">
+        <div class="step-title"><span class="step-num">1</span>Create a host-based Ingress with two independent rule blocks</div>
+        <div class="code-wrap"><span class="code-label">techmart-host-ingress.yaml</span><button class="copy-btn" data-copy>Copy</button>
+<pre class="cmd">apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata: {name: techmart-hosts, namespace: techmart}
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: shop.techmart.local
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend: {service: {name: frontend-svc, port: {number: 80}}}
+  - host: api.techmart.local
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend: {service: {name: api-svc, port: {number: 80}}}</pre></div>
+        <div class="code-wrap"><span class="code-label">bash</span><button class="copy-btn" data-copy>Copy</button>
+<pre class="cmd">kubectl apply -f techmart-host-ingress.yaml
+kubectl -n techmart describe ingress techmart-hosts</pre></div>
+        <div class="expected"><span class="label">EXPECTED OUTPUT</span>Rules:
+  Host                  Path  Backends
+  ----                  ----  --------
+  shop.techmart.local
+                        /     frontend-svc:80
+  api.techmart.local
+                        /     api-svc:80</div>
+      </div>
+      <div class="step">
+        <div class="step-title"><span class="step-num">2</span>Prove routing is by hostname, not by which app you "meant"</div>
+        <div class="step-desc">Same URL path (<code>/</code>) on the same port-forward, two different Host headers, two different apps.</div>
+        <div class="terminal-tag">TERMINAL 2 — port-forward from Lab 3 still running in Terminal 1</div>
+        <div class="code-wrap"><span class="code-label">bash</span><button class="copy-btn" data-copy>Copy</button>
+<pre class="cmd">curl -s -H "Host: shop.techmart.local" http://localhost:8080/
+curl -s -H "Host: api.techmart.local"  http://localhost:8080/</pre></div>
+        <div class="expected"><span class="label">EXPECTED OUTPUT</span>&lt;h1&gt;TechMart Storefront&lt;/h1&gt;&lt;p&gt;served by frontend&lt;/p&gt;
+&lt;h1&gt;API v1&lt;/h1&gt;&lt;p&gt;served by api-v1 (blue)&lt;/p&gt;</div>
+      </div>
+      <div class="step">
+        <div class="step-title"><span class="step-num">3</span>Optional — make it work in a real browser</div>
+        <div class="step-desc">Point the hostnames at a node IP in your local hosts file (not needed for the curl checks above, but useful for demos):</div>
+        <div class="code-wrap"><span class="code-label">bash — run on your laptop, not the cluster node</span><button class="copy-btn" data-copy>Copy</button>
+<pre class="cmd"><span class="c1"># &lt;node-ip&gt; and &lt;http-nodeport&gt; came from Lab 1 step 3</span>
+echo "&lt;node-ip&gt;  shop.techmart.local api.techmart.local" | sudo tee -a /etc/hosts</pre></div>
+      </div>
+      <div class="summary-box"><div class="label">✓ KEY LEARNING</div>
+        <ul><li>Host-based and path-based rules aren't mutually exclusive — a single Ingress object can mix both, and multiple Ingress objects for the same controller merge into one routing table</li><li>Two Ingress objects targeting the <em>same host and path</em> with no distinguishing annotation is undefined/conflicting behavior — this becomes important in Lab 7's canary setup, which deliberately relies on the canary annotation to make that overlap meaningful</li></ul>
+      </div>
+    </div>
+  </div>
+ </div>
+</section>
+
+<!-- ===================== TLS TERMINATION ===================== -->
+<section class="section" id="tls-termination">
+ <div class="container">
+  <h2>TLS termination</h2>
+  <p class="lead">The Ingress controller decrypts HTTPS on the way in, so your Pods only ever speak plain HTTP internally — one certificate, managed in one place, instead of TLS configured inside every app.</p>
+
+  <div class="diagram">
+    <svg viewBox="0 0 900 150" xmlns="http://www.w3.org/2000/svg">
+      <defs><marker id="a3" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#5b6b84"/></marker></defs>
+      <circle cx="60" cy="75" r="18" fill="#eaf1ff" stroke="#c7d9fb"/><text x="60" y="79" text-anchor="middle" font-size="10" fill="#334155">Client</text>
+      <line x1="78" y1="75" x2="220" y2="75" stroke="#0f7a37" stroke-width="2" marker-end="url(#a3)"/>
+      <text x="150" y="65" text-anchor="middle" font-size="10.5" font-weight="600" fill="#0f7a37">HTTPS (encrypted)</text>
+      <rect x="220" y="45" width="160" height="60" rx="10" fill="#eaf1ff" stroke="#c7d9fb"/><text x="300" y="70" text-anchor="middle" font-size="11" font-weight="600" fill="#1d4ed8">Ingress Controller</text><text x="300" y="86" text-anchor="middle" font-size="9.5" fill="#5b6b84">decrypts here</text>
+      <line x1="380" y1="75" x2="520" y2="75" stroke="#94a3b8" stroke-width="2" stroke-dasharray="4 3" marker-end="url(#a3)"/>
+      <text x="450" y="65" text-anchor="middle" font-size="10.5" font-weight="600" fill="#64748b">plain HTTP (in-cluster)</text>
+      <rect x="520" y="45" width="130" height="60" rx="10" fill="#f0faf3" stroke="#bfe8cc"/><text x="585" y="79" text-anchor="middle" font-size="11" fill="#0f7a37">Pod</text>
+      <text x="450" y="125" text-anchor="middle" font-size="10" fill="#94a3b8">The certificate lives once, on the controller — not copied into every app's container</text>
+    </svg>
+    <div class="diagram-caption">TLS terminates at the Ingress controller. Traffic inside the cluster is plain HTTP unless you separately configure end-to-end TLS.</div>
+  </div>
+
+  <div class="usecase-box"><div class="label">Real-world use case</div>
+    A retailer renews one wildcard certificate for <code>*.techmart.com</code> and attaches it to the Ingress once.
+    Every new microservice that adds a path or host to that Ingress is HTTPS-protected automatically — no per-app
+    cert management, no expired-cert incidents traced to one forgotten service.
+  </div>
+ </div>
+</section>
+
+<section class="section" id="lab5-wrap">
+ <div class="container">
+  <div class="lab reveal" id="lab5">
+    <div class="lab-head">
+      <h3><span class="lab-num">5</span>Terminate TLS with a self-signed certificate</h3>
+      <div class="lab-meta"><span class="pill diff-2">15 min</span><span class="pill">Offline — no cert-manager needed</span></div>
+    </div>
+    <div class="prereq"><b>Requires:</b> <code>openssl</code> on your workstation or a cluster node. Self-signed certs are for learning TLS mechanics only — production clusters should use cert-manager + a real CA (Let's Encrypt or internal PKI).</div>
+    <div class="lab-body">
+      <div class="step">
+        <div class="step-title"><span class="step-num">1</span>Generate a self-signed cert for shop.techmart.local</div>
+        <div class="code-wrap"><span class="code-label">bash</span><button class="copy-btn" data-copy>Copy</button>
+<pre class="cmd">openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+  -keyout techmart-tls.key -out techmart-tls.crt \
+  -subj "/CN=shop.techmart.local/O=techmart-training" \
+  -addext "subjectAltName=DNS:shop.techmart.local"</pre></div>
+        <div class="expected"><span class="label">EXPECTED OUTPUT</span>Generating a RSA private key
+......................+++++
+writing new private key to 'techmart-tls.key'
+-----</div>
+      </div>
+      <div class="step">
+        <div class="step-title"><span class="step-num">2</span>Store it as a TLS Secret</div>
+        <div class="code-wrap"><span class="code-label">bash</span><button class="copy-btn" data-copy>Copy</button>
+<pre class="cmd">kubectl -n techmart create secret tls techmart-tls \
+  --cert=techmart-tls.crt --key=techmart-tls.key</pre></div>
+        <div class="expected"><span class="label">EXPECTED OUTPUT</span>secret/techmart-tls created</div>
+      </div>
+      <div class="step">
+        <div class="step-title"><span class="step-num">3</span>Reference the Secret from the Ingress</div>
+        <div class="step-desc">Add a <code>tls</code> block to <code>techmart-hosts</code> from Lab 4, plus force-redirect so HTTP requests upgrade automatically.</div>
+        <div class="code-wrap"><span class="code-label">techmart-tls-patch.yaml (merge into techmart-hosts)</span><button class="copy-btn" data-copy>Copy</button>
+<pre class="cmd">apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: techmart-hosts
+  namespace: techmart
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+spec:
+  ingressClassName: nginx
+  tls:
+  - hosts: [shop.techmart.local]
+    secretName: techmart-tls
+  rules:
+  - host: shop.techmart.local
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend: {service: {name: frontend-svc, port: {number: 80}}}
+  - host: api.techmart.local
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend: {service: {name: api-svc, port: {number: 80}}}</pre></div>
+        <div class="code-wrap"><span class="code-label">bash</span><button class="copy-btn" data-copy>Copy</button>
+<pre class="cmd">kubectl apply -f techmart-tls-patch.yaml</pre></div>
+      </div>
+      <div class="step">
+        <div class="step-title"><span class="step-num">4</span>Verify HTTPS with the self-signed cert (via port-forward on 443)</div>
+        <div class="terminal-tag">TERMINAL 1 — new port-forward for the HTTPS port</div>
+        <div class="code-wrap"><span class="code-label">bash</span><button class="copy-btn" data-copy>Copy</button>
+<pre class="cmd">kubectl port-forward -n ingress-nginx svc/ingress-nginx-controller 8443:443</pre></div>
+        <div class="terminal-tag">TERMINAL 2</div>
+        <div class="code-wrap"><span class="code-label">bash</span><button class="copy-btn" data-copy>Copy</button>
+<pre class="cmd"><span class="c1"># -k skips CA trust check — expected, because it's self-signed</span>
+curl -sk -H "Host: shop.techmart.local" https://localhost:8443/
+echo
+openssl s_client -connect localhost:8443 -servername shop.techmart.local &lt;/dev/null 2&gt;/dev/null | grep "subject="</pre></div>
+        <div class="expected"><span class="label">EXPECTED OUTPUT</span>&lt;h1&gt;TechMart Storefront&lt;/h1&gt;&lt;p&gt;served by frontend&lt;/p&gt;
+subject=CN = shop.techmart.local, O = techmart-training</div>
+      </div>
+      <div class="summary-box"><div class="label">✓ KEY LEARNING</div>
+        <ul><li>TLS is a Secret of <code>type: kubernetes.io/tls</code> referenced by name — swapping certs later is just updating that one Secret, no Ingress edit needed</li><li><code>curl -k</code> and browser warnings for self-signed certs are expected and correct — in production, cert-manager issues a CA-trusted cert instead and no flag is needed</li></ul>
+      </div>
+    </div>
+  </div>
+ </div>
+</section>
+
+<!-- ===================== ANNOTATIONS ===================== -->
+<section class="section" id="annotations">
+ <div class="container">
+  <h2>Annotations and controller-specific behavior</h2>
+  <p class="lead">The Ingress <em>spec</em> is a small, stable API on purpose. Everything controller-specific — rewrites, timeouts, body size limits, canary weights — lives in <code>metadata.annotations</code> instead, which is why annotations are never portable between controllers.</p>
+
+  <div class="warn-box"><div class="label">Why this matters</div>
+    An annotation prefixed <code>nginx.ingress.kubernetes.io/...</code> is silently <b>ignored</b> by Traefik or an
+    ALB controller — no error, no warning, the behavior just doesn't happen. Always check which controller
+    (<code>ingressClassName</code>) an annotation actually belongs to.
+  </div>
+
+  <table>
+    <tr><th>Annotation (nginx.ingress.kubernetes.io/...)</th><th>Purpose</th><th>Example</th></tr>
+    <tr><td><code>rewrite-target</code></td><td>Rewrite the matched path before forwarding to the backend</td><td><code>/$2</code></td></tr>
+    <tr><td><code>ssl-redirect</code></td><td>Force HTTP → HTTPS redirect</td><td><code>"true"</code></td></tr>
+    <tr><td><code>proxy-body-size</code></td><td>Max upload size accepted before 413</td><td><code>"50m"</code></td></tr>
+    <tr><td><code>proxy-read-timeout</code></td><td>Seconds to wait for a slow backend response</td><td><code>"60"</code></td></tr>
+    <tr><td><code>configuration-snippet</code></td><td>Raw NGINX config injection — powerful, high blast-radius, use sparingly</td><td>custom headers</td></tr>
+    <tr><td><code>canary</code></td><td>Marks this Ingress as a canary split (Lab 7)</td><td><code>"true"</code></td></tr>
+    <tr><td><code>canary-weight</code></td><td>Percentage of traffic sent to the canary backend</td><td><code>"20"</code></td></tr>
+  </table>
+ </div>
+</section>
+
+<section class="section" id="lab6-wrap">
+ <div class="container">
+  <div class="lab reveal" id="lab6">
+    <div class="lab-head">
+      <h3><span class="lab-num">6</span>Apply and observe annotation-driven behavior</h3>
+      <div class="lab-meta"><span class="pill diff-2">10 min</span></div>
+    </div>
+    <div class="prereq"><b>Builds on:</b> <code>techmart-path</code> from Lab 3.</div>
+    <div class="lab-body">
+      <div class="step">
+        <div class="step-title"><span class="step-num">1</span>Add a body-size limit and a read timeout</div>
+        <div class="code-wrap"><span class="code-label">bash</span><button class="copy-btn" data-copy>Copy</button>
+<pre class="cmd">kubectl -n techmart annotate ingress techmart-path \
+  nginx.ingress.kubernetes.io/proxy-body-size="1m" \
+  nginx.ingress.kubernetes.io/proxy-read-timeout="30" --overwrite</pre></div>
+      </div>
+      <div class="step">
+        <div class="step-title"><span class="step-num">2</span>Prove the limit is enforced</div>
+        <div class="step-desc">Send a body larger than the 1m limit through the port-forward from Lab 3 and confirm the controller rejects it before the request reaches a Pod.</div>
+        <div class="code-wrap"><span class="code-label">bash</span><button class="copy-btn" data-copy>Copy</button>
+<pre class="cmd">head -c 2000000 /dev/urandom > /tmp/big.bin
+curl -s -o /dev/null -w "%{http_code}\n" \
+  -H "Host: shop.techmart.local" \
+  --data-binary @/tmp/big.bin http://localhost:8080/api</pre></div>
+        <div class="expected"><span class="label">EXPECTED OUTPUT</span>413</div>
+      </div>
+      <div class="summary-box"><div class="label">✓ KEY LEARNING</div>
+        <ul><li>Annotation changes take effect via a controller reload — usually sub-second, but always re-check with <code>kubectl describe ingress</code> if behavior doesn't seem to have changed</li><li>A <code>413</code> means the controller rejected it, never reaching your Pod — useful when debugging "why didn't my app's upload-size code even run"</li></ul>
+      </div>
+    </div>
+  </div>
+ </div>
+</section>
+
+<!-- ===================== BLUE/GREEN & CANARY ===================== -->
+<section class="section" id="bluegreen-canary">
+ <div class="container">
+  <h2>Blue/Green and Canary deployments</h2>
+  <p class="lead">Two different answers to the same question: how do I ship a new version without an all-or-nothing cutover?</p>
+
+  <div class="grid-2">
+    <div class="concept-card"><h4>Canary <span class="tag live">Lab 7</span></h4>
+      <p>Send a small, controlled <em>percentage</em> of traffic to the new version while most traffic stays on the old one. Increase the percentage gradually as confidence grows.</p>
+      <ul><li>Real production traffic tests the new version, but blast radius is capped by the weight</li><li>Done via a second Ingress object with <code>canary</code> annotations</li></ul>
+    </div>
+    <div class="concept-card"><h4>Blue/Green <span class="tag live">Lab 8</span></h4>
+      <p>Run old ("blue") and new ("green") versions fully side by side, then cut over <em>all</em> traffic at once by repointing a Service selector.</p>
+      <ul><li>Instant full cutover, and an equally instant full rollback</li><li>No partial-traffic state to reason about — it's either 100% blue or 100% green</li></ul>
+    </div>
+  </div>
+
+  <div class="usecase-box"><div class="label">Real-world use case</div>
+    A payments API uses <b>blue/green</b> — correctness bugs in payment processing are unacceptable even for 5% of
+    traffic, so the team wants full confidence before any customer request hits the new version, with an instant
+    rollback path. The storefront's recommendation engine uses <b>canary</b> instead — a bad model update degrades
+    UX for some users, not payments, so gradually testing on 10% of live traffic before a full rollout is an
+    acceptable and much faster way to validate.
+  </div>
+ </div>
+</section>
+
+<section class="section" id="lab7-wrap">
+ <div class="container">
+  <div class="lab reveal" id="lab7">
+    <div class="lab-head">
+      <h3><span class="lab-num">7</span>Canary deployment — shift 20% of API traffic to v2</h3>
+      <div class="lab-meta"><span class="pill diff-3">20 min</span><span class="pill">Annotation-based — no service mesh needed</span></div>
+    </div>
+    <div class="prereq"><b>Builds on:</b> Lab 3's <code>techmart-path</code> (the "stable" Ingress, already routing <code>/api</code> to <code>api-svc</code> → api-v1/blue).</div>
+    <div class="lab-body">
+      <div class="step">
+        <div class="step-title"><span class="step-num">1</span>Create a second Ingress marked as canary, same host + path, pointing at api-v2-svc</div>
+        <div class="step-desc">The canary Ingress must match the <em>same</em> host and path as the stable Ingress — the <code>canary</code> annotations are what tell ingress-nginx to treat it as a weighted split rather than a conflict.</div>
+        <div class="code-wrap"><span class="code-label">techmart-canary-ingress.yaml</span><button class="copy-btn" data-copy>Copy</button>
+<pre class="cmd">apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: techmart-api-canary
+  namespace: techmart
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+    nginx.ingress.kubernetes.io/canary: "true"
+    nginx.ingress.kubernetes.io/canary-weight: "20"
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: shop.techmart.local
+    http:
+      paths:
+      - path: /api(/|$)(.*)
+        pathType: ImplementationSpecific
+        backend: {service: {name: api-v2-svc, port: {number: 80}}}</pre></div>
+        <div class="code-wrap"><span class="code-label">bash</span><button class="copy-btn" data-copy>Copy</button>
+<pre class="cmd">kubectl apply -f techmart-canary-ingress.yaml</pre></div>
+      </div>
+      <div class="step">
+        <div class="step-title"><span class="step-num">2</span>Send 50 requests and count how many landed on each version</div>
+        <div class="code-wrap"><span class="code-label">bash</span><button class="copy-btn" data-copy>Copy</button>
+<pre class="cmd">for i in $(seq 1 50); do
+  curl -s -H "Host: shop.techmart.local" http://localhost:8080/api
+done | sort | uniq -c</pre></div>
+        <div class="expected"><span class="label">EXPECTED OUTPUT (approximate — weighting is probabilistic, not exact)</span>     40 &lt;h1&gt;API v1&lt;/h1&gt;&lt;p&gt;served by api-v1 (blue)&lt;/p&gt;
+     10 &lt;h1&gt;API v2&lt;/h1&gt;&lt;p&gt;served by api-v2 (green / canary)&lt;/p&gt;</div>
+        <div class="step-desc" style="margin-top:8px">~80/20 split, matching <code>canary-weight: "20"</code>. Small sample sizes will vary — this is expected of weighted random routing, not a bug.</div>
+      </div>
+      <div class="step">
+        <div class="step-title"><span class="step-num">3</span>Promote — raise the weight, then remove the canary once at 100%</div>
+        <div class="code-wrap"><span class="code-label">bash</span><button class="copy-btn" data-copy>Copy</button>
+<pre class="cmd">kubectl -n techmart annotate ingress techmart-api-canary \
+  nginx.ingress.kubernetes.io/canary-weight="50" --overwrite
+<span class="c1"># once confident, cut the stable Ingress over to api-v2-svc directly, then:</span>
+kubectl -n techmart delete ingress techmart-api-canary</pre></div>
+      </div>
+      <div class="summary-box"><div class="label">✓ KEY LEARNING</div>
+        <ul><li>Canary is implemented as a <em>second Ingress object</em>, not a field on the original — the annotations on the canary Ingress are what make ingress-nginx treat the pair as one weighted route instead of two conflicting rules</li><li>Weight-based canary is approximate by design (it's random per-request, not sticky), which is fine for most APIs but wrong for anything needing session affinity — that needs <code>canary-by-cookie</code> or <code>canary-by-header</code> instead</li></ul>
+      </div>
+    </div>
+  </div>
+ </div>
+</section>
+
+<section class="section" id="lab8-wrap">
+ <div class="container">
+  <div class="lab reveal" id="lab8">
+    <div class="lab-head">
+      <h3><span class="lab-num">8</span>Blue/Green — instant cutover from v1 to v2</h3>
+      <div class="lab-meta"><span class="pill diff-2">10 min</span><span class="pill">Zero Ingress changes</span></div>
+    </div>
+    <div class="prereq"><b>Builds on:</b> Lab 2's <code>api-svc</code>, currently selecting <code>version: blue</code> (api-v1).</div>
+    <div class="lab-body">
+      <div class="step">
+        <div class="step-title"><span class="step-num">1</span>Confirm current state — api-svc is pointed at blue</div>
+        <div class="code-wrap"><span class="code-label">bash</span><button class="copy-btn" data-copy>Copy</button>
+<pre class="cmd">kubectl -n techmart get svc api-svc -o jsonpath='{.spec.selector}{"\n"}'
+curl -s -H "Host: shop.techmart.local" http://localhost:8080/api</pre></div>
+        <div class="expected"><span class="label">EXPECTED OUTPUT</span>{"app":"api","version":"blue"}
+&lt;h1&gt;API v1&lt;/h1&gt;&lt;p&gt;served by api-v1 (blue)&lt;/p&gt;</div>
+      </div>
+      <div class="step">
+        <div class="step-title"><span class="step-num">2</span>Cut over — patch the Service selector to green, all at once</div>
+        <div class="step-desc">No Ingress object is touched. The Ingress still points at <code>api-svc</code> by name — only which Pods that name resolves to has changed.</div>
+        <div class="code-wrap"><span class="code-label">bash</span><button class="copy-btn" data-copy>Copy</button>
+<pre class="cmd">kubectl -n techmart patch svc api-svc \
+  -p '{"spec":{"selector":{"app":"api","version":"green"}}}'</pre></div>
+        <div class="expected"><span class="label">EXPECTED OUTPUT</span>service/api-svc patched</div>
+      </div>
+      <div class="step">
+        <div class="step-title"><span class="step-num">3</span>Confirm every request now hits green — immediately, no partial state</div>
+        <div class="code-wrap"><span class="code-label">bash</span><button class="copy-btn" data-copy>Copy</button>
+<pre class="cmd">for i in $(seq 1 10); do
+  curl -s -H "Host: shop.techmart.local" http://localhost:8080/api
+done | sort | uniq -c</pre></div>
+        <div class="expected"><span class="label">EXPECTED OUTPUT</span>     10 &lt;h1&gt;API v2&lt;/h1&gt;&lt;p&gt;served by api-v2 (green / canary)&lt;/p&gt;</div>
+      </div>
+      <div class="step">
+        <div class="step-title"><span class="step-num">4</span>Rollback drill — flip straight back to blue</div>
+        <div class="code-wrap"><span class="code-label">bash</span><button class="copy-btn" data-copy>Copy</button>
+<pre class="cmd">kubectl -n techmart patch svc api-svc \
+  -p '{"spec":{"selector":{"app":"api","version":"blue"}}}'</pre></div>
+      </div>
+      <div class="summary-box"><div class="label">✓ KEY LEARNING</div>
+        <ul><li>Blue/green here costs zero Ingress edits — the indirection is entirely in the Service selector, which is why rollback is a single <code>kubectl patch</code> away, not a redeploy</li><li>Unlike canary, this is all-or-nothing per request the instant the patch applies — there's no gradual window, which is exactly the point when you need a clean rollback guarantee</li></ul>
+      </div>
+    </div>
+  </div>
+ </div>
+</section>
+
+<!-- ===================== REFERENCE ===================== -->
+<section class="section" id="reference">
+ <div class="container">
+  <span class="eyebrow">Quick reference</span>
+  <h2>Annotation &amp; concept cheat sheet</h2>
+  <table>
+    <tr><th>Situation</th><th>What to reach for</th></tr>
+    <tr><td>App returns 404 for everything routed through a path prefix</td><td>Check <code>rewrite-target</code> and your path regex capture groups</td></tr>
+    <tr><td>Ingress applied but nothing routes</td><td><code>kubectl get pods -n ingress-nginx</code> — confirm a controller is actually running</td></tr>
+    <tr><td>Ingress routes but backend returns 502/503</td><td><code>kubectl get endpoints &lt;svc&gt;</code> — likely a label-selector mismatch</td></tr>
+    <tr><td>Need HTTPS with zero cloud dependency, for learning</td><td>Self-signed cert + <code>kubectl create secret tls</code> (Lab 5)</td></tr>
+    <tr><td>Need HTTPS in production</td><td>cert-manager + Let's Encrypt or internal CA, not self-signed</td></tr>
+    <tr><td>Ship a risky change to a small % of traffic first</td><td>Canary Ingress with <code>canary-weight</code> (Lab 7)</td></tr>
+    <tr><td>Need instant full cutover and instant rollback</td><td>Blue/green via Service selector patch (Lab 8)</td></tr>
+    <tr><td>Testing without DNS or a cloud LoadBalancer</td><td><code>kubectl port-forward</code> + <code>curl -H "Host: ..."</code></td></tr>
+  </table>
+ </div>
+</section>
+
+<!-- ===================== TROUBLESHOOTING ===================== -->
+<section class="section" id="troubleshooting">
+ <div class="container">
+  <span class="eyebrow">Appendix</span>
+  <h2>Troubleshooting checklist</h2>
+  <div class="grid-2">
+    <div class="concept-card">
+      <h4>Controller Pod won't start</h4>
+      <ul>
+        <li><code>kubectl -n ingress-nginx describe pod &lt;pod&gt;</code> — check Events for image pull or scheduling failures</li>
+        <li>On a 3-node bare-metal cluster, confirm the control-plane taint isn't blocking scheduling if you expect the controller on node-1</li>
+      </ul>
+    </div>
+    <div class="concept-card">
+      <h4>Ingress shows no ADDRESS</h4>
+      <ul>
+        <li>Normal on bare metal without MetalLB — the controller Service is <code>NodePort</code>, not <code>LoadBalancer</code>, so this field is expected to stay empty</li>
+        <li>Use the NodePort or <code>port-forward</code> instead of expecting an external IP here</li>
+      </ul>
+    </div>
+    <div class="concept-card">
+      <h4>curl hangs, no response</h4>
+      <ul>
+        <li>Confirm the <code>port-forward</code> in Terminal 1 is still running and hasn't exited</li>
+        <li>Confirm <code>ingressClassName: nginx</code> matches your controller's actual class: <code>kubectl get ingressclass</code></li>
+      </ul>
+    </div>
+    <div class="concept-card">
+      <h4>TLS handshake failure</h4>
+      <ul>
+        <li>Confirm the Secret type is <code>kubernetes.io/tls</code>: <code>kubectl get secret techmart-tls -o jsonpath='{.type}'</code></li>
+        <li>Confirm the cert's <code>CN</code>/SAN matches the host you're connecting with — a mismatch causes verification failures, not connection failures</li>
+      </ul>
+    </div>
+  </div>
+ </div>
+</section>
+
+</main>
+</div>
+
+<button class="back-top" id="backTop" aria-label="Back to top">↑</button>
+
+<script>
+/* ---- Copy buttons ---- */
+document.querySelectorAll('[data-copy]').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    const pre = btn.parentElement.querySelector('pre.cmd');
+    const text = pre.innerText;
+    navigator.clipboard.writeText(text).then(()=>{
+      btn.textContent='Copied'; btn.classList.add('copied');
+      setTimeout(()=>{btn.textContent='Copy'; btn.classList.remove('copied');},1500);
+    }).catch(()=>{ btn.textContent='Error'; });
+  });
+});
+
+/* ---- Active-section nav tracking ---- */
+const navLinks = document.querySelectorAll('[data-nav]');
+const sections = Array.from(navLinks).map(l=>document.querySelector(l.getAttribute('href'))).filter(Boolean);
+const io = new IntersectionObserver((entries)=>{
+  entries.forEach(entry=>{
+    if(entry.isIntersecting){
+      const id = '#'+entry.target.id;
+      navLinks.forEach(l=>l.classList.toggle('active', l.getAttribute('href')===id));
+    }
+  });
+},{rootMargin:'-15% 0px -70% 0px'});
+sections.forEach(s=>io.observe(s));
+
+/* ---- Back-to-top ---- */
+const backTop = document.getElementById('backTop');
+window.addEventListener('scroll',()=>{
+  backTop.classList.toggle('show', window.scrollY>500);
+});
+backTop.addEventListener('click',()=>window.scrollTo({top:0,behavior:'smooth'}));
+
+/* ---- Scroll reveal ---- */
+const revealIO = new IntersectionObserver((entries)=>{
+  entries.forEach(e=>{ if(e.isIntersecting){ e.target.classList.add('in'); revealIO.unobserve(e.target);} });
+},{threshold:0.08});
+document.querySelectorAll('.reveal').forEach(el=>revealIO.observe(el));
+</script>
+</body>
+</html>
