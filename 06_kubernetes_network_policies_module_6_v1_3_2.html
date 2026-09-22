@@ -1,0 +1,1437 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Kubernetes Network Policies — Cilium‑Based Validated Deep‑Dive Self‑Study Reference</title>
+<style>
+:root{
+  --bg:#071018;--panel:#0d1823;--panel2:#101f2c;--text:#e9f3fb;--muted:#9fb4c4;
+  --line:#203747;--cyan:#44d7e8;--green:#57e389;--amber:#ffc857;--red:#ff667a;
+  --blue:#79a7ff;--violet:#b995ff;--code:#061019;--shadow:0 18px 55px rgba(0,0,0,.28);
+}
+html[data-theme="light"]{
+  --bg:#edf5f8;--panel:#ffffff;--panel2:#f4f9fb;--text:#10212b;--muted:#536d7b;
+  --line:#cfe0e8;--cyan:#007f92;--green:#14844a;--amber:#a26600;--red:#c62d49;
+  --blue:#245edb;--violet:#7146c9;--code:#10202a;--shadow:0 16px 45px rgba(19,65,85,.12);
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:
+radial-gradient(circle at 15% -10%,rgba(68,215,232,.12),transparent 34rem),
+radial-gradient(circle at 90% 10%,rgba(185,149,255,.10),transparent 34rem),var(--bg);
+color:var(--text);font:16px/1.65 Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+a{color:var(--cyan)}
+button{font:inherit}
+.shell{display:grid;grid-template-columns:270px minmax(0,1fr);max-width:1500px;margin:auto}
+aside{position:sticky;top:0;height:100vh;padding:22px 18px;border-right:1px solid var(--line);background:rgba(7,16,24,.72);backdrop-filter:blur(14px);z-index:10}
+html[data-theme="light"] aside{background:rgba(237,245,248,.80)}
+.brand{display:flex;gap:12px;align-items:center;margin-bottom:18px}
+.logo{width:42px;height:42px;border-radius:13px;background:linear-gradient(135deg,var(--cyan),var(--violet));box-shadow:0 0 28px rgba(68,215,232,.25);position:relative}
+.logo:before,.logo:after{content:"";position:absolute;inset:9px;border:2px solid #fff;border-radius:8px;transform:rotate(45deg)}
+.logo:after{inset:14px;border-radius:5px;transform:rotate(0)}
+.brand b{display:block}.brand small{color:var(--muted)}
+nav a{display:block;text-decoration:none;color:var(--muted);padding:8px 10px;border-radius:9px;margin:2px 0;font-size:.92rem}
+nav a:hover,nav a.active{color:var(--text);background:var(--panel2);box-shadow:inset 3px 0 var(--cyan)}
+.side-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:18px}
+.btn{border:1px solid var(--line);background:var(--panel);color:var(--text);padding:9px 11px;border-radius:10px;cursor:pointer}
+.btn:hover{border-color:var(--cyan)}
+.progress{height:5px;background:var(--line);border-radius:9px;overflow:hidden;margin:15px 0}
+.progress i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--cyan),var(--green))}
+main{min-width:0;padding:38px clamp(22px,4vw,68px) 90px}
+.hero{padding:42px;border:1px solid var(--line);background:linear-gradient(135deg,rgba(68,215,232,.08),rgba(185,149,255,.07)),var(--panel);border-radius:26px;box-shadow:var(--shadow);position:relative;overflow:hidden}
+.hero:after{content:"";position:absolute;width:280px;height:280px;border:1px solid rgba(68,215,232,.18);border-radius:50%;right:-80px;top:-100px;box-shadow:0 0 0 42px rgba(68,215,232,.03),0 0 0 84px rgba(68,215,232,.02)}
+.eyebrow{text-transform:uppercase;letter-spacing:.14em;color:var(--cyan);font-size:.78rem;font-weight:800}
+h1{font-size:clamp(2.3rem,6vw,5.2rem);line-height:.98;margin:.25em 0 .35em;letter-spacing:-.05em;max-width:900px}
+.hero p{max-width:800px;color:var(--muted);font-size:1.08rem}
+.chips{display:flex;gap:9px;flex-wrap:wrap;margin-top:22px}
+.chip{border:1px solid var(--line);padding:6px 10px;border-radius:999px;background:var(--panel2);font-size:.84rem}
+section{scroll-margin-top:20px;margin-top:54px}
+.section-head{display:flex;align-items:end;justify-content:space-between;gap:18px;border-bottom:1px solid var(--line);padding-bottom:12px;margin-bottom:20px}
+h2{font-size:clamp(1.55rem,3vw,2.35rem);margin:0;letter-spacing:-.025em}
+h3{font-size:1.18rem;margin:24px 0 10px}
+h4{margin:18px 0 7px}
+p{margin:9px 0}
+.muted{color:var(--muted)}
+.grid{display:grid;grid-template-columns:repeat(12,1fr);gap:16px}
+.card{grid-column:span 4;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:20px}
+.card.wide{grid-column:span 6}.card.full{grid-column:1/-1}
+.card .kicker{color:var(--cyan);font-size:.75rem;font-weight:800;text-transform:uppercase;letter-spacing:.12em}
+.callout{border-left:4px solid var(--cyan);padding:14px 16px;background:var(--panel2);border-radius:0 12px 12px 0;margin:16px 0}
+.callout.warn{border-color:var(--amber)}.callout.danger{border-color:var(--red)}.callout.good{border-color:var(--green)}
+.assumption{border:1px dashed var(--amber);background:color-mix(in srgb,var(--amber) 8%,var(--panel));padding:13px 15px;border-radius:12px}
+.assumption b{color:var(--amber)}
+.meter{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:15px 0}
+.meter div{padding:13px;border-radius:12px;border:1px solid var(--line);text-align:center}
+.meter .on{border-color:var(--green);box-shadow:inset 0 0 0 1px var(--green)}
+.flow-wrap{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:18px;overflow:hidden}
+svg{max-width:100%;height:auto}
+.packet{animation:travel 3.2s linear infinite}
+.packet.blocked{animation:blocktravel 2.5s ease-in-out infinite}
+@keyframes travel{0%{transform:translateX(0);opacity:0}12%{opacity:1}90%{opacity:1}100%{transform:translateX(525px);opacity:0}}
+@keyframes blocktravel{0%{transform:translateX(0);opacity:0}15%{opacity:1}65%{transform:translateX(245px);opacity:1}82%,100%{transform:translateX(245px);opacity:0}}
+.tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+.tab{border:1px solid var(--line);background:var(--panel2);color:var(--muted);padding:8px 11px;border-radius:9px;cursor:pointer}
+.tab.active{color:var(--text);border-color:var(--cyan);box-shadow:inset 0 -2px var(--cyan)}
+.tabpane{display:none}.tabpane.active{display:block}
+code{font-family:"SFMono-Regular",Consolas,"Liberation Mono",monospace}
+.code{position:relative;background:var(--code);color:#dcf2ff;border:1px solid #1d3443;border-radius:14px;overflow:auto;margin:13px 0}
+.code pre{margin:0;padding:18px 48px 18px 18px;white-space:pre;min-width:max-content;font-size:.89rem;line-height:1.55}
+.copy{position:absolute;top:8px;right:8px;border:1px solid #2d4e60;background:#102b39;color:#dff7ff;border-radius:8px;padding:5px 8px;cursor:pointer;font-size:.78rem}
+table{width:100%;border-collapse:collapse;margin:14px 0;background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+th,td{text-align:left;padding:11px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+th{color:var(--cyan);font-size:.84rem;background:var(--panel2)}
+details{border:1px solid var(--line);border-radius:12px;background:var(--panel);margin:10px 0;overflow:hidden}
+summary{cursor:pointer;padding:14px 16px;font-weight:750}
+details>div{padding:0 16px 16px}
+.logic{display:grid;grid-template-columns:1fr auto 1fr;gap:14px;align-items:center}
+.logic-box{padding:18px;border:1px solid var(--line);border-radius:13px;background:var(--panel2)}
+.arrow{font-size:1.4rem;color:var(--cyan)}
+.lab{border:1px solid var(--line);border-radius:18px;background:var(--panel);overflow:hidden;margin:22px 0}
+.lab-head{padding:18px 20px;background:linear-gradient(90deg,rgba(68,215,232,.09),transparent);display:flex;gap:14px;align-items:center}
+.lab-num{width:38px;height:38px;display:grid;place-items:center;border-radius:50%;background:var(--cyan);color:#031217;font-weight:900}
+.lab-body{padding:0 20px 20px}
+.check{display:flex;gap:10px;align-items:flex-start;margin:8px 0}
+.check input{margin-top:6px}
+.quizq{padding:16px;border:1px solid var(--line);border-radius:13px;margin:12px 0;background:var(--panel)}
+.quizq button{display:block;width:100%;text-align:left;margin:7px 0;border:1px solid var(--line);background:var(--panel2);color:var(--text);padding:9px;border-radius:9px;cursor:pointer}
+.quizq button.correct{border-color:var(--green);background:color-mix(in srgb,var(--green) 12%,var(--panel2))}
+.quizq button.wrong{border-color:var(--red);background:color-mix(in srgb,var(--red) 10%,var(--panel2))}
+.badge{display:inline-block;font-size:.74rem;border:1px solid var(--line);padding:3px 7px;border-radius:999px;margin-right:5px}
+.badge.red{color:var(--red);border-color:var(--red)}.badge.green{color:var(--green);border-color:var(--green)}.badge.amber{color:var(--amber);border-color:var(--amber)}
+.footer{margin-top:70px;padding-top:25px;border-top:1px solid var(--line);color:var(--muted)}
+@media(max-width:980px){
+  .shell{grid-template-columns:1fr} aside{position:relative;height:auto;border-right:0;border-bottom:1px solid var(--line)}
+  nav{display:flex;overflow:auto;gap:3px}nav a{white-space:nowrap}.side-actions{max-width:270px}
+  main{padding:24px 18px 70px}.hero{padding:28px 22px}.card,.card.wide{grid-column:1/-1}.logic{grid-template-columns:1fr}.arrow{transform:rotate(90deg);text-align:center}
+}
+@media print{aside,.copy,.side-actions{display:none!important}.shell{display:block}body{background:#fff;color:#111}.card,.flow-wrap,.lab,details{break-inside:avoid}}
+</style>
+</head>
+<body>
+<div class="shell">
+<aside>
+  <div class="brand"><div class="logo"></div><div><b>Network Policy Lab</b><small>Module 6 · v1.3.2 corrected</small></div></div>
+  <div class="progress"><i id="progressBar"></i></div>
+  <nav id="nav">
+    <a href="#overview">Overview</a><a href="#how-to-use">How to Study</a><a href="#fundamentals">6.1 Fundamentals</a><a href="#rules">6.2 Ingress & Egress</a>
+    <a href="#selectors">6.3 Selectors</a><a href="#ipblock">6.4 IPBlock</a><a href="#namespaces">6.5 Namespaced Policies</a>
+    <a href="#defaults">6.6 Deny / Allow</a><a href="#cni-migration">Flannel → Cilium</a><a href="#policy-design">Policy Design</a><a href="#labs">Hands‑on Labs</a><a href="#misconceptions">Misconceptions</a><a href="#troubleshooting">Troubleshooting</a><a href="#checks">Knowledge Check</a><a href="#validation-status">Validation</a>
+  </nav>
+  <div class="side-actions">
+    <button class="btn" id="themeBtn">☀ Theme</button><button class="btn" onclick="window.print()">⎙ Print</button>
+  </div>
+</aside>
+
+<main>
+<header class="hero" id="overview">
+  <div class="eyebrow">Kubernetes networking · security boundary at L3/L4</div>
+  <h1>Network Policies</h1>
+  <p>Learn how Kubernetes decides which pod connections are allowed, how selectors define trust boundaries, why CNI enforcement matters, and how to move from an open namespace to a deliberate least‑privilege policy set without breaking DNS or application traffic.</p>
+  <div class="chips"><span class="chip">Working Kubernetes knowledge</span><span class="chip">Concept → packet flow → YAML → lab</span><span class="chip">Single‑file offline reference</span><span class="chip">Ingress + Egress</span></div>
+</header>
+
+<section id="how-to-use">
+  <div class="section-head"><h2>How to study this module</h2><span class="badge green">learner path</span></div>
+  <div class="grid">
+    <div class="card"><div class="kicker">1 · Understand</div><h3>Build the mental model</h3><p>Start with the packet path. Ask: <b>Who is the source?</b> <b>Who is the destination?</b> <b>Which direction is being filtered?</b></p></div>
+    <div class="card"><div class="kicker">2 · Read</div><h3>Translate YAML into English</h3><p>Do not memorize YAML. Read each policy as a sentence: “Select these pods, isolate this direction, allow these peers, on these ports.”</p></div>
+    <div class="card"><div class="kicker">3 · Prove</div><h3>Run positive and negative tests</h3><p>Every policy should be tested twice: a flow that <b>must work</b> and a flow that <b>must fail</b>.</p></div>
+  </div>
+  <div class="callout good"><b>Golden rule:</b> Never ask only “Is the policy applied?” Ask: <b>Which exact connection should succeed, and which exact connection should fail?</b></div>
+  <h3>Four questions before reading any NetworkPolicy</h3>
+  <div class="grid">
+    <div class="card wide"><b>Q1 — Which pods does it select?</b><p class="muted">Read <code>spec.podSelector</code> first. If no running pods match, valid YAML can still affect nothing.</p></div>
+    <div class="card wide"><b>Q2 — Which direction is isolated?</b><p class="muted"><code>policyTypes</code> tells you whether ingress, egress, or both are controlled.</p></div>
+    <div class="card wide"><b>Q3 — Who or what is allowed?</b><p class="muted">Read <code>from</code>, <code>to</code>, selectors and <code>ipBlock</code>.</p></div>
+    <div class="card wide"><b>Q4 — Which destination port?</b><p class="muted">Port 443 means L4 destination port 443. It does not mean “trusted HTTPS application.”</p></div>
+  </div>
+</section>
+
+<section>
+  <div class="section-head"><h2>Where this fits in the series</h2></div>
+  <div class="grid">
+    <div class="card wide"><div class="kicker">Previously</div><h3>Ingress traffic management</h3><p>You learned how external HTTP(S) traffic is routed through an ingress implementation toward Services and Pods. That answers <em>where traffic should go</em>.</p></div>
+    <div class="card wide"><div class="kicker">Now</div><h3>NetworkPolicy</h3><p>This module answers a different question: <em>which connections are permitted to exist</em> between pods, namespaces and selected IP ranges.</p></div>
+    <div class="card full"><div class="kicker">Next</div><p>After policy enforcement, a natural next step is observability/troubleshooting: tracing denied flows, CNI diagnostics, DNS failures and service connectivity.</p></div>
+  </div>
+  <div class="callout warn"><b>Important distinction:</b> Ingress objects/controllers are application-routing components. Kubernetes NetworkPolicy is an allow-list security control normally enforced by the CNI/network plugin. They solve related but different problems.</div>
+</section>
+
+<section id="fundamentals">
+  <div class="section-head"><h2>6.1 NetworkPolicy Fundamentals</h2><span class="badge green">core mental model</span></div>
+
+  <div class="assumption"><b>Prerequisite assumed here:</b> you already understand Pods, namespaces, labels, Services, ClusterIP and basic CNI purpose. If “CNI” is only a familiar acronym, read the CNI gate below before running any lab.</div>
+
+  
+<h3>Deep dive: from open to isolated</h3>
+<p>Separate <b>pod existence</b> from <b>pod isolation state</b>. A pod can be healthy and reachable, then become isolated for only one traffic direction when a policy starts selecting it.</p>
+<div class="meter">
+  <div><b>State A</b><br><span class="muted">No policy selects pod</span><br><span class="badge green">non-isolated</span></div>
+  <div class="on"><b>State B</b><br><span class="muted">Selected for ingress</span><br><span class="badge amber">ingress isolated</span></div>
+  <div class="on"><b>State C</b><br><span class="muted">Selected for ingress + egress</span><br><span class="badge red">both isolated</span></div>
+</div>
+<p><b>Isolation does not mean “deny everything.”</b> It means traffic in that direction must now be allowed by at least one applicable policy.</p>
+
+<h3>Read a policy like a sentence</h3>
+<div class="code"><button class="copy">Copy</button><pre><code>apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-web-to-api
+  namespace: shop
+spec:
+  podSelector:
+    matchLabels:
+      app: api
+  policyTypes:
+  - Ingress
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          app: web
+    ports:
+    - protocol: TCP
+      port: 8080</code></pre></div>
+<div class="grid">
+  <div class="card wide"><div class="kicker">English translation</div><p>“In namespace <code>shop</code>, select <code>app=api</code> pods. Isolate them for ingress. Permit <code>app=web</code> pods in the same namespace to reach TCP/8080.”</p></div>
+  <div class="card wide"><div class="kicker">What it does not say</div><p>It does not control API egress, does not allow web pods from every namespace, and does not permit TCP/8081.</p></div>
+</div>
+
+<h3>The one sentence definition</h3>
+  <p>A <code>NetworkPolicy</code> selects a set of pods in one namespace and describes the network traffic those selected pods are allowed to receive, send, or both.</p>
+
+  <div class="grid">
+    <div class="card"><div class="kicker">Selection</div><h3>Which pods?</h3><p><code>spec.podSelector</code> selects the pods to which the policy applies. An empty selector <code>{}</code> means every pod in that policy’s namespace.</p></div>
+    <div class="card"><div class="kicker">Direction</div><h3>Ingress / Egress</h3><p><code>policyTypes</code> determines whether the selected pods are isolated for incoming traffic, outgoing traffic, or both.</p></div>
+    <div class="card"><div class="kicker">Allowance</div><h3>Who / where / port?</h3><p>Rules allow selected peers and ports. NetworkPolicy is allow-list oriented: after isolation begins, unmatched traffic is denied.</p></div>
+  </div>
+
+  <h3>Default allow is the starting state</h3>
+  <div class="flow-wrap">
+  <svg viewBox="0 0 820 215" role="img" aria-label="Default allow packet flow">
+    <defs><marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0,10 3.5,0 7" fill="currentColor"/></marker></defs>
+    <rect x="30" y="64" width="180" height="88" rx="18" fill="none" stroke="var(--cyan)" stroke-width="2"/>
+    <text x="120" y="98" fill="var(--text)" text-anchor="middle" font-size="18" font-weight="700">client Pod</text><text x="120" y="124" fill="var(--muted)" text-anchor="middle">source</text>
+    <rect x="610" y="64" width="180" height="88" rx="18" fill="none" stroke="var(--green)" stroke-width="2"/>
+    <text x="700" y="98" fill="var(--text)" text-anchor="middle" font-size="18" font-weight="700">api Pod</text><text x="700" y="124" fill="var(--muted)" text-anchor="middle">destination</text>
+    <line x1="210" y1="108" x2="610" y2="108" stroke="var(--muted)" stroke-width="2" marker-end="url(#arrowhead)"/>
+    <circle class="packet" cx="248" cy="108" r="9" fill="var(--green)"/>
+    <text x="410" y="72" fill="var(--green)" text-anchor="middle" font-size="15" font-weight="700">No applicable policy → allowed</text>
+  </svg>
+  </div>
+  <p>Without an applicable NetworkPolicy, pods are non-isolated in that direction. That is why merely creating a namespace does not create a network security boundary.</p>
+
+  <h3>The CNI enforcement gate</h3>
+  <div class="callout danger"><b>A policy object can exist and still do nothing.</b> Kubernetes stores the NetworkPolicy API object; a network plugin that supports NetworkPolicy must enforce it. Never validate the feature by checking only <code>kubectl get networkpolicy</code> — validate with a traffic test.</div>
+  <div class="code"><button class="copy">Copy</button><pre><code># Identify common CNI components (names vary by distribution)
+kubectl get pods -n kube-system -o wide
+
+# See policy objects
+kubectl get networkpolicy -A
+
+# Do NOT stop here. Enforcement must be proved with an allow/deny test.</code></pre></div>
+
+  <details><summary>Implementation detail: what “isolation” means</summary><div>
+    <p>Ingress and egress isolation are independent. A pod becomes isolated for a direction when at least one policy selects that pod and applies to that direction. Once isolated, traffic in that direction must match an allow rule from at least one applicable policy.</p>
+    <p>Reply traffic for an allowed connection is normally implicitly allowed; NetworkPolicy is concerned with permitted connection establishment rather than forcing you to author symmetric return-path rules for every flow.</p>
+  </div></details>
+</section>
+
+<section id="rules">
+  <div class="section-head"><h2>6.2 Ingress &amp; Egress Rules</h2><span class="badge amber">two-sided connection</span></div>
+  <p><b>Ingress is evaluated at the destination pod.</b> <b>Egress is evaluated at the source pod.</b> A pod-to-pod connection succeeds only when both sides permit it, if each side is isolated for that direction.</p>
+
+  
+<h3>Deep dive: one connection, two policy decisions</h3>
+<div class="callout"><b>Example:</b> <code>frontend → api:8080</code>. If frontend is egress-isolated, its egress must allow the API. If API is ingress-isolated, its ingress must allow the frontend. When both sides are isolated, both decisions must permit the flow.</div>
+<div class="flow-wrap">
+<svg viewBox="0 0 980 290" role="img" aria-label="Two-sided policy evaluation">
+  <rect x="40" y="95" width="190" height="100" rx="18" fill="none" stroke="var(--cyan)" stroke-width="2"/>
+  <text x="135" y="132" text-anchor="middle" fill="var(--text)" font-weight="800">frontend</text>
+  <text x="135" y="160" text-anchor="middle" fill="var(--muted)">source pod</text>
+  <rect x="300" y="65" width="150" height="165" rx="18" fill="none" stroke="var(--amber)" stroke-width="2"/>
+  <text x="375" y="112" text-anchor="middle" fill="var(--amber)" font-weight="800">EGRESS</text>
+  <text x="375" y="148" text-anchor="middle" fill="var(--muted)">destination + port?</text>
+  <rect x="530" y="65" width="150" height="165" rx="18" fill="none" stroke="var(--violet)" stroke-width="2"/>
+  <text x="605" y="112" text-anchor="middle" fill="var(--violet)" font-weight="800">INGRESS</text>
+  <text x="605" y="148" text-anchor="middle" fill="var(--muted)">source + port?</text>
+  <rect x="750" y="95" width="190" height="100" rx="18" fill="none" stroke="var(--green)" stroke-width="2"/>
+  <text x="845" y="132" text-anchor="middle" fill="var(--text)" font-weight="800">api:8080</text>
+  <text x="845" y="160" text-anchor="middle" fill="var(--muted)">destination pod</text>
+  <line x1="230" y1="145" x2="300" y2="145" stroke="var(--muted)" stroke-width="2"/>
+  <line x1="450" y1="145" x2="530" y2="145" stroke="var(--muted)" stroke-width="2"/>
+  <line x1="680" y1="145" x2="750" y2="145" stroke="var(--muted)" stroke-width="2"/>
+  <circle class="packet" cx="250" cy="145" r="8" fill="var(--green)" style="animation-duration:3s"/>
+</svg>
+</div>
+
+<h3>Additive behavior: there is no policy priority</h3>
+<p>Standard NetworkPolicy does not behave like a top-to-bottom firewall chain. If multiple policies select a pod, their allowed flows are combined.</p>
+<table><thead><tr><th>Policy</th><th>Allows</th></tr></thead><tbody>
+<tr><td>A</td><td>frontend → api:8080</td></tr>
+<tr><td>B</td><td>monitoring → api:9090</td></tr>
+<tr><td><b>Effective result</b></td><td><b>Both flows are allowed</b></td></tr>
+</tbody></table>
+<div class="callout danger"><b>Security consequence:</b> a broad allow cannot be “overridden” by a later stricter standard NetworkPolicy.</div>
+
+<div class="logic">
+    <div class="logic-box"><b>Source pod</b><br><span class="muted">Is it egress-isolated?</span><br>Allowed destination + destination port?</div>
+    <div class="arrow">→</div>
+    <div class="logic-box"><b>Destination pod</b><br><span class="muted">Is it ingress-isolated?</span><br>Allowed source + destination port?</div>
+  </div>
+
+  <div class="tabs" data-tabs="direction">
+    <button class="tab active" data-tab="ing">Ingress</button><button class="tab" data-tab="eg">Egress</button><button class="tab" data-tab="both">Combined</button>
+  </div>
+  <div class="tabpane active" data-pane="ing"><div class="callout"><b>Ingress:</b> the policy selects destination pods. <code>from</code> describes permitted sources; <code>ports</code> describes destination ports on the selected pods.</div></div>
+  <div class="tabpane" data-pane="eg"><div class="callout"><b>Egress:</b> the policy selects source pods. <code>to</code> describes permitted destinations; <code>ports</code> describes destination ports.</div></div>
+  <div class="tabpane" data-pane="both"><div class="callout good"><b>Combined:</b> there is no “policy priority.” Applicable policies are unioned. One policy can allow DNS while another allows an API destination; both allowances coexist.</div></div>
+
+  <h3>Port and protocol matching</h3>
+  <table><thead><tr><th>Field</th><th>Meaning</th><th>Practical note</th></tr></thead><tbody>
+    <tr><td><code>protocol</code></td><td>TCP, UDP or SCTP</td><td>Defaults to TCP when omitted.</td></tr>
+    <tr><td><code>port</code></td><td>Destination port number or supported named port</td><td>Be precise; allowing port 443 does not mean “HTTPS identity,” only L4 destination port 443.</td></tr>
+    <tr><td><code>endPort</code></td><td>Inclusive end of a numeric port range</td><td>Useful for controlled ranges; support depends on plugin implementation.</td></tr>
+  </tbody></table>
+
+  <h3>Minimal ingress allow policy</h3>
+  <div class="code"><button class="copy">Copy</button><pre><code>apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: api-from-frontend
+  namespace: shop
+spec:
+  podSelector:
+    matchLabels:
+      app: api
+  policyTypes:
+  - Ingress
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          app: frontend
+    ports:
+    - protocol: TCP
+      port: 8080</code></pre></div>
+  <p>Read it as: “For <code>app=api</code> pods in namespace <code>shop</code>, ingress is restricted; permit TCP/8080 from <code>app=frontend</code> pods in the <em>same</em> namespace.”</p>
+
+  <div class="callout warn"><b>Common YAML trap:</b> two peer selector entries mean OR; <code>namespaceSelector</code> and <code>podSelector</code> in the same peer entry mean AND. The indentation changes the security meaning.</div>
+</section>
+
+<section id="selectors">
+  <div class="section-head"><h2>6.3 Label Selectors</h2><span class="badge">identity by metadata</span></div>
+  <p>Selectors are the core policy identity mechanism. NetworkPolicy does not target a Deployment object; it targets pods whose labels match at evaluation time.</p>
+
+  
+<h3>Deep dive: selector scope and AND/OR logic</h3>
+<p>Most learner mistakes happen here because visually similar YAML can represent different trust relationships.</p>
+<table><thead><tr><th>Shape</th><th>Meaning</th></tr></thead><tbody>
+<tr><td><code>podSelector</code> only</td><td>Matching pods in the policy's own namespace</td></tr>
+<tr><td><code>namespaceSelector</code> only</td><td>All pods in matching namespaces</td></tr>
+<tr><td><code>namespaceSelector</code> + <code>podSelector</code> in one peer</td><td>Matching pods inside matching namespaces — <b>AND</b></td></tr>
+<tr><td>Two separate peer list entries</td><td>Either peer can match — <b>OR</b></td></tr>
+</tbody></table>
+<div class="callout warn"><b>Production insight:</b> once labels authorize network access, label modification is security-sensitive. RBAC and admission controls become part of the network trust model.</div>
+<h3>matchLabels vs matchExpressions</h3>
+<p>Use <code>matchLabels</code> for exact identities. Use <code>matchExpressions</code> when membership in a set is the better model.</p>
+<div class="code"><button class="copy">Copy</button><pre><code>podSelector:
+  matchExpressions:
+  - key: environment
+    operator: In
+    values: ["production", "staging"]
+  - key: network-access
+    operator: Exists</code></pre></div>
+
+<div class="grid">
+    <div class="card wide"><div class="kicker">matchLabels</div><h3>Exact equality</h3><p>Best for straightforward identities such as <code>app: api</code>, <code>tier: backend</code>, or <code>security-zone: restricted</code>.</p></div>
+    <div class="card wide"><div class="kicker">matchExpressions</div><h3>Set-based matching</h3><p>Use operators such as <code>In</code>, <code>NotIn</code>, <code>Exists</code> and <code>DoesNotExist</code> when one exact label pair is not expressive enough.</p></div>
+  </div>
+
+  <div class="code"><button class="copy">Copy</button><pre><code>podSelector:
+  matchExpressions:
+  - key: role
+    operator: In
+    values: ["frontend", "gateway"]
+  - key: exposed
+    operator: Exists</code></pre></div>
+
+  <h3>Pod selector scope</h3>
+  <p>A peer <code>podSelector</code> by itself refers to pods in the same namespace as the NetworkPolicy. To select pods in other namespaces, add a <code>namespaceSelector</code>.</p>
+
+  <div class="tabs" data-tabs="selector">
+    <button class="tab active" data-tab="same">Same namespace</button><button class="tab" data-tab="allns">All pods in selected namespaces</button><button class="tab" data-tab="and">Specific pods in selected namespaces</button>
+  </div>
+  <div class="tabpane active" data-pane="same"><div class="code"><button class="copy">Copy</button><pre><code>from:
+- podSelector:
+    matchLabels:
+      app: frontend</code></pre></div></div>
+  <div class="tabpane" data-pane="allns"><div class="code"><button class="copy">Copy</button><pre><code>from:
+- namespaceSelector:
+    matchLabels:
+      access-to-shop: "true"</code></pre></div></div>
+  <div class="tabpane" data-pane="and"><div class="code"><button class="copy">Copy</button><pre><code>from:
+- namespaceSelector:
+    matchLabels:
+      access-to-shop: "true"
+  podSelector:
+    matchLabels:
+      app: frontend</code></pre></div></div>
+
+  <details><summary>Built-in namespace name label</summary><div><p>Kubernetes namespaces normally carry the immutable label <code>kubernetes.io/metadata.name</code>. This is convenient when a policy must allow a specifically named namespace without requiring your own business label first.</p></div></details>
+</section>
+
+<section id="ipblock">
+  <div class="section-head"><h2>6.4 IPBlock Rules</h2><span class="badge red">use deliberately</span></div>
+  <p><code>ipBlock</code> matches IP CIDR ranges. It is most predictable for cluster-external networks such as a database subnet, proxy, legacy endpoint or controlled egress destination.</p>
+
+  
+<h3>Deep dive: where IPBlock fits</h3>
+<p><code>ipBlock</code> is best when the peer is naturally represented as a network rather than Kubernetes workload identity.</p>
+<div class="grid">
+  <div class="card"><div class="kicker">Good fit</div><h3>External subnet</h3><p>Corporate proxy, external API range, on-prem database subnet or appliance.</p></div>
+  <div class="card"><div class="kicker">Poor fit</div><h3>Dynamic Pods</h3><p>Pod IPs change. Prefer label selectors for Kubernetes workloads.</p></div>
+  <div class="card"><div class="kicker">Caution</div><h3>Service VIP</h3><p>NAT and Service implementation can change which address the policy engine sees.</p></div>
+</div>
+<div class="callout"><b><code>except</code>:</b> allow a parent CIDR but carve out one or more contained ranges that must remain excluded.</div>
+
+<div class="code"><button class="copy">Copy</button><pre><code>egress:
+- to:
+  - ipBlock:
+      cidr: 10.40.0.0/16
+      except:
+      - 10.40.7.0/24
+  ports:
+  - protocol: TCP
+    port: 443</code></pre></div>
+  <p>This allows TCP/443 to <code>10.40.0.0/16</code> except addresses inside <code>10.40.7.0/24</code>.</p>
+
+  <div class="callout warn"><b>NAT caveat:</b> NetworkPolicy processing can see different source/destination addresses depending on CNI, Service implementation, cloud networking and where address translation occurs. Do not assume an <code>ipBlock</code> always sees the original client IP or Service IP.</div>
+
+  <h3>Hybrid selector + IPBlock scenario</h3>
+  <p>You can use separate rules to allow internal application peers and an external CIDR. Treat these as two explicit trust relationships, not one broad exception.</p>
+  <div class="code"><button class="copy">Copy</button><pre><code>egress:
+# Internal: selected pods in a selected namespace
+- to:
+  - namespaceSelector:
+      matchLabels:
+        kubernetes.io/metadata.name: payments
+    podSelector:
+      matchLabels:
+        app: ledger
+  ports:
+  - port: 8443
+    protocol: TCP
+
+# External: managed API subnet
+- to:
+  - ipBlock:
+      cidr: 203.0.113.0/24
+  ports:
+  - port: 443
+    protocol: TCP</code></pre></div>
+</section>
+
+<section id="namespaces">
+  <div class="section-head"><h2>6.5 Namespaced Policies</h2><span class="badge">scope matters</span></div>
+  <p>A NetworkPolicy is namespaced. Its <code>spec.podSelector</code> can select only pods in the policy’s own namespace. Peer selectors can authorize traffic from/to other namespaces.</p>
+
+  
+<h3>Deep dive: namespaces as trust zones</h3>
+<p>Namespaces are useful organizational boundaries, but they are not automatically network-isolated. NetworkPolicy turns namespace and pod labels into enforceable traffic relationships.</p>
+<div class="grid">
+  <div class="card"><div class="kicker">Pattern A</div><h3>Web → API</h3><p>Permit only frontend pods from the web namespace to selected API pods.</p></div>
+  <div class="card"><div class="kicker">Pattern B</div><h3>Monitoring</h3><p>Permit a controlled monitoring namespace to scrape designated metrics ports.</p></div>
+  <div class="card"><div class="kicker">Pattern C</div><h3>Platform services</h3><p>Allow DNS or platform control traffic intentionally instead of opening the whole namespace.</p></div>
+</div>
+
+<h3>Cross-namespace communication pattern</h3>
+  <div class="flow-wrap">
+  <svg viewBox="0 0 900 330" role="img" aria-label="Cross namespace policy">
+    <rect x="35" y="45" width="340" height="230" rx="22" fill="none" stroke="var(--blue)" stroke-width="2"/>
+    <text x="60" y="78" fill="var(--blue)" font-size="18" font-weight="800">namespace: web</text>
+    <rect x="85" y="125" width="220" height="90" rx="16" fill="var(--panel2)" stroke="var(--cyan)"/>
+    <text x="195" y="163" fill="var(--text)" text-anchor="middle" font-weight="700">app=frontend</text><text x="195" y="188" fill="var(--muted)" text-anchor="middle">client pod</text>
+    <rect x="525" y="45" width="340" height="230" rx="22" fill="none" stroke="var(--violet)" stroke-width="2"/>
+    <text x="550" y="78" fill="var(--violet)" font-size="18" font-weight="800">namespace: api</text>
+    <rect x="595" y="125" width="220" height="90" rx="16" fill="var(--panel2)" stroke="var(--green)"/>
+    <text x="705" y="163" fill="var(--text)" text-anchor="middle" font-weight="700">app=orders</text><text x="705" y="188" fill="var(--muted)" text-anchor="middle">TCP/8080</text>
+    <line x1="305" y1="170" x2="595" y2="170" stroke="var(--muted)" stroke-width="2"/>
+    <circle class="packet" cx="330" cy="170" r="9" fill="var(--green)" style="animation-duration:2.8s"/>
+    <text x="450" y="132" fill="var(--green)" text-anchor="middle" font-size="14">namespace + pod selectors</text>
+    <text x="450" y="240" fill="var(--muted)" text-anchor="middle" font-size="14">Policy lives in destination namespace api</text>
+  </svg>
+  </div>
+
+  <div class="code"><button class="copy">Copy</button><pre><code>apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: orders-from-web
+  namespace: api
+spec:
+  podSelector:
+    matchLabels:
+      app: orders
+  policyTypes: [Ingress]
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: web
+      podSelector:
+        matchLabels:
+          app: frontend
+    ports:
+    - protocol: TCP
+      port: 8080</code></pre></div>
+
+  <h3>Namespace isolation patterns</h3>
+  <table><thead><tr><th>Pattern</th><th>Use</th><th>Risk to watch</th></tr></thead><tbody>
+    <tr><td>Namespace default deny</td><td>Security baseline for all pods in a namespace</td><td>Breaks DNS or monitoring if egress/ingress exceptions are omitted.</td></tr>
+    <tr><td>Namespace label trust</td><td>Authorize whole namespaces by controlled labels</td><td>Who can modify namespace labels becomes a security concern.</td></tr>
+    <tr><td>Namespace + pod label</td><td>Strongest native peer scoping</td><td>Requires label governance in both namespaces.</td></tr>
+  </tbody></table>
+</section>
+
+<section id="defaults">
+  <div class="section-head"><h2>6.6 Default Deny / Allow Patterns</h2><span class="badge green">progressive lockdown</span></div>
+  <p>A robust rollout normally starts by observing required flows, then introducing default isolation and narrowly restoring legitimate traffic.</p>
+
+  <div class="grid">
+    <div class="card"><div class="kicker">Step 1</div><h3>Baseline</h3><p>Inventory application flows: clients, server ports, DNS, telemetry, external dependencies, probes and administrative paths.</p></div>
+    <div class="card"><div class="kicker">Step 2</div><h3>Default deny</h3><p>Apply namespace-wide isolation in a controlled environment. Expect breakage if dependencies were missed.</p></div>
+    <div class="card"><div class="kicker">Step 3</div><h3>Restore minimally</h3><p>Add targeted policies. Because policies are additive, split rules by purpose when that improves ownership and review.</p></div>
+  </div>
+
+  
+<h3>Progressive lockdown: safer than denying everything at once</h3>
+<ol>
+<li><b>Observe</b> actual application dependencies.</li>
+<li><b>Document</b> every required source → destination → protocol → port flow.</li>
+<li><b>Prove baseline health</b> before changing policy.</li>
+<li><b>Deny ingress by default</b> and restore required inbound flows.</li>
+<li><b>Deny egress role-by-role</b> rather than isolating the entire application at once.</li>
+<li><b>Restore DNS and external dependencies</b> deliberately.</li>
+<li><b>Keep negative tests</b> so unintended access stays blocked.</li>
+</ol>
+<h3>Why DNS is often the first failure</h3>
+<p>Applications usually connect by hostname. After egress isolation, DNS itself can be blocked before the application ever attempts its intended TCP connection.</p>
+<div class="callout danger"><b>Debug order:</b> after egress lockdown, test name resolution first. If DNS fails, application errors can look misleading or unrelated to NetworkPolicy.</div>
+
+<h3>Default deny ingress</h3>
+  <div class="code"><button class="copy">Copy</button><pre><code>apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-ingress
+  namespace: shop
+spec:
+  podSelector: {}
+  policyTypes:
+  - Ingress</code></pre></div>
+
+  <h3>Default deny egress</h3>
+  <div class="code"><button class="copy">Copy</button><pre><code>apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-egress
+  namespace: shop
+spec:
+  podSelector: {}
+  policyTypes:
+  - Egress</code></pre></div>
+
+  <div class="callout danger"><b>DNS is the classic egress-lockdown failure.</b> If egress is denied, applications may report “host not found,” timeouts, or unrelated-looking failures until DNS traffic to the cluster DNS path is explicitly allowed. Validate the actual DNS pods/service and your CNI semantics instead of copying a cluster-specific rule blindly.</div>
+
+  <h3>Allow all — explicit escape hatch</h3>
+  <p>An empty rule item such as <code>ingress: - {}</code> or <code>egress: - {}</code> explicitly allows all traffic in that direction for selected pods. Because policies are additive, an allow-all policy cannot be “overridden” by another stricter NetworkPolicy for the same direction.</p>
+</section>
+
+
+
+<section id="cni-migration">
+  <div class="section-head"><h2>Prerequisite Lab — Migrate Flannel → Cilium</h2><span class="badge red">cluster-changing</span></div>
+
+  <div class="callout danger"><b>This changes cluster networking.</b> Run it only on the dedicated training cluster or during an approved maintenance window. Do not delete Flannel first. The safer migration model is: install Cilium in secondary mode → migrate nodes one by one → make Cilium primary → remove Flannel last.</div>
+  <div class="callout warn"><b>Official migration constraints:</b> live migration requires a new distinct Cilium pod CIDR, cluster-pool IPAM, and a distinct overlay protocol or port. Cilium documents this migration path for existing plugins that use the Linux routing stack such as Flannel. It is not the place to simultaneously change IP families or introduce BGP routing. During mixed-CNI operation, Cilium policy enforcement must remain disabled.</div>
+
+
+  <h3>Why the order matters</h3>
+  <div class="flow-wrap">
+  <svg viewBox="0 0 1040 230" role="img" aria-label="Flannel to Cilium controlled migration">
+    <rect x="25" y="75" width="175" height="80" rx="16" fill="none" stroke="var(--blue)" stroke-width="2"/>
+    <text x="112" y="106" fill="var(--text)" text-anchor="middle" font-weight="800">1. Flannel active</text>
+    <text x="112" y="132" fill="var(--muted)" text-anchor="middle">Cilium absent</text>
+
+    <rect x="230" y="55" width="190" height="120" rx="16" fill="none" stroke="var(--amber)" stroke-width="2"/>
+    <text x="325" y="92" fill="var(--text)" text-anchor="middle" font-weight="800">2. Cilium secondary</text>
+    <text x="325" y="119" fill="var(--muted)" text-anchor="middle">no CNI takeover</text>
+    <text x="325" y="144" fill="var(--muted)" text-anchor="middle">policy disabled</text>
+
+    <rect x="455" y="55" width="190" height="120" rx="16" fill="none" stroke="var(--cyan)" stroke-width="2"/>
+    <text x="550" y="92" fill="var(--text)" text-anchor="middle" font-weight="800">3. Node migration</text>
+    <text x="550" y="119" fill="var(--muted)" text-anchor="middle">cordon → drain</text>
+    <text x="550" y="144" fill="var(--muted)" text-anchor="middle">label → reboot → test</text>
+
+    <rect x="680" y="55" width="160" height="120" rx="16" fill="none" stroke="var(--green)" stroke-width="2"/>
+    <text x="760" y="92" fill="var(--text)" text-anchor="middle" font-weight="800">4. Cilium primary</text>
+    <text x="760" y="119" fill="var(--muted)" text-anchor="middle">policy enabled</text>
+    <text x="760" y="144" fill="var(--muted)" text-anchor="middle">all pods migrated</text>
+
+    <rect x="875" y="75" width="140" height="80" rx="16" fill="none" stroke="var(--red)" stroke-width="2"/>
+    <text x="945" y="106" fill="var(--text)" text-anchor="middle" font-weight="800">5. Remove</text>
+    <text x="945" y="132" fill="var(--muted)" text-anchor="middle">Flannel</text>
+
+    <line x1="200" y1="115" x2="230" y2="115" stroke="var(--muted)" stroke-width="2"/>
+    <line x1="420" y1="115" x2="455" y2="115" stroke="var(--muted)" stroke-width="2"/>
+    <line x1="645" y1="115" x2="680" y2="115" stroke="var(--muted)" stroke-width="2"/>
+    <line x1="840" y1="115" x2="875" y2="115" stroke="var(--muted)" stroke-width="2"/>
+  </svg>
+  </div>
+
+  <h3>M0 — Record the current cluster before touching networking</h3>
+  <div class="code"><button class="copy">Copy</button><pre><code>kubectl get nodes -o wide
+kubectl get pods -A -o wide
+kubectl get networkpolicy -A
+
+# Confirm Flannel and determine how it was installed.
+kubectl get pods -A | grep -i flannel || true
+kubectl get ns kube-flannel --show-labels 2>/dev/null || true
+helm list -A | grep -i flannel || true
+
+# Check whether a separate NetworkPolicy controller already exists.
+# Cilium's migration documentation warns that migration with an existing
+# policy provider needs special care because Cilium policy is disabled
+# until all nodes have migrated.
+kubectl get pods -A | grep -Ei 'network.?policy|calico|kube-router|antrea' || true
+
+# On each node, record the current CNI configuration before migration.
+# Example when logged into a node:
+sudo ls -la /etc/cni/net.d/
+
+# Inspect node PodCIDRs and service CIDR evidence.
+kubectl get nodes -o custom-columns=NAME:.metadata.name,PODCIDR:.spec.podCIDR,PODCIDRS:.spec.podCIDRs
+
+# Confirm kube-proxy currently exists; this module keeps kube-proxy.
+kubectl -n kube-system get ds kube-proxy
+
+# Save state for troubleshooting.
+kubectl get nodes -o yaml > before-cilium-nodes.yaml
+kubectl get pods -A -o wide > before-cilium-pods.txt</code></pre></div>
+
+  <div class="callout warn"><b>Design used in this lab:</b> keep <code>kube-proxy</code>. Do not combine “replace the CNI” and “replace kube-proxy” in the same learning exercise. Cilium can replace kube-proxy, but that is a separate advanced change.</div>
+
+  <h3>M1 — Check host prerequisites</h3>
+  <div class="code"><button class="copy">Copy</button><pre><code># Run on each node.
+uname -r
+uname -m
+
+# Cilium's current stable documentation requires a modern Linux kernel.
+# Also confirm required networking mounts / tools exist.
+mount | grep -E 'bpf|cgroup' || true
+ip link show
+</code></pre></div>
+
+  <h3>M2 — Install the Cilium CLI on the admin/control-plane host</h3>
+  <div class="code"><button class="copy">Copy</button><pre><code>CILIUM_CLI_VERSION=$(curl -s https://raw.githubusercontent.com/cilium/cilium-cli/main/stable.txt)
+CLI_ARCH=amd64
+if [ "$(uname -m)" = "aarch64" ]; then CLI_ARCH=arm64; fi
+
+curl -L --fail --remote-name-all \
+  https://github.com/cilium/cilium-cli/releases/download/${CILIUM_CLI_VERSION}/cilium-linux-${CLI_ARCH}.tar.gz{,.sha256sum}
+
+sha256sum --check cilium-linux-${CLI_ARCH}.tar.gz.sha256sum
+sudo tar xzvfC cilium-linux-${CLI_ARCH}.tar.gz /usr/local/bin
+rm cilium-linux-${CLI_ARCH}.tar.gz{,.sha256sum}
+
+cilium version</code></pre></div>
+
+  <h3>M3 — Choose a migration CIDR distinct from Flannel</h3>
+  <p>This module assumes the common Flannel pod network <code>10.244.0.0/16</code>. During controlled migration, use a different unused pool for Cilium, for example <code>10.245.0.0/16</code>.</p>
+  <div class="code"><button class="copy">Copy</button><pre><code># Verify 10.245.0.0/16 is NOT already used in your environment.
+kubectl get nodes -o custom-columns=NAME:.metadata.name,PODCIDR:.spec.podCIDR
+ip route | grep 10.245 || true
+
+export CILIUM_POD_CIDR=10.245.0.0/16
+echo "$CILIUM_POD_CIDR"</code></pre></div>
+  <div class="callout danger"><b>Do not blindly use 10.245.0.0/16.</b> It must not overlap node networks, Service CIDRs, VPNs, datacenter routes, existing pod networks, or other routed networks reachable from the cluster.</div>
+
+  <h3>M4 — Install Cilium 1.20.2 in migration/secondary mode</h3>
+  <p>Flannel commonly uses VXLAN UDP/8472. During coexistence this lab gives Cilium a different VXLAN port, <code>8473</code>.</p>
+  <div class="callout danger"><b>Node firewall requirement:</b> allow UDP/8473 between all Kubernetes nodes before installing Cilium. Because this module keeps <code>tunnelPort: 8473</code> in the final Helm values, UDP/8473 remains the Cilium VXLAN port after migration unless you deliberately schedule a later change. Do not close it after removing Flannel.</div>
+
+  <div class="code"><button class="copy">Copy</button><pre><code>cat > values-migration.yaml <<'EOF'
+operator:
+  unmanagedPodWatcher:
+    restart: false
+
+routingMode: tunnel
+tunnelProtocol: vxlan
+tunnelPort: 8473
+
+cni:
+  customConf: true
+  uninstall: false
+
+ipam:
+  mode: cluster-pool
+  operator:
+    clusterPoolIPv4PodCIDRList:
+      - 10.245.0.0/16
+
+policyEnforcementMode: "never"
+
+bpf:
+  hostLegacyRouting: true
+EOF
+
+# Let the CLI auto-detect additional values, then review them.
+cilium install 1.20.2 \
+  --values values-migration.yaml \
+  --dry-run-helm-values > values-initial.yaml
+
+less values-initial.yaml
+
+helm repo add cilium https://helm.cilium.io/
+helm repo update
+helm install cilium cilium/cilium \
+  --version 1.20.2 \
+  --namespace kube-system \
+  --values values-initial.yaml
+
+cilium status --wait</code></pre></div>
+
+  <div class="callout"><b>Expected at this point:</b> Cilium is healthy enough to establish its overlay, but existing pods are still using Flannel. Policy enforcement stays disabled during mixed-CNI migration.</div>
+
+  <h3>M5 — Create the per-node takeover configuration</h3>
+  <div class="code"><button class="copy">Copy</button><pre><code>cat <<'EOF' | kubectl apply --server-side -f -
+apiVersion: cilium.io/v2
+kind: CiliumNodeConfig
+metadata:
+  namespace: kube-system
+  name: cilium-default
+spec:
+  nodeSelector:
+    matchLabels:
+      io.cilium.migration/cilium-default: "true"
+  defaults:
+    write-cni-conf-when-ready: /host/etc/cni/net.d/05-cilium.conflist
+    custom-cni-conf: "false"
+    cni-chaining-mode: "none"
+    cni-exclusive: "true"
+EOF
+
+kubectl -n kube-system get ciliumnodeconfig cilium-default -o yaml</code></pre></div>
+
+  <h3>M6 — Migrate one worker at a time</h3>
+  <p>Start with a worker, not the control plane. On your three-node training cluster, use the order <code>w1</code> → <code>w2</code> → <code>master</code>.</p>
+
+  <div class="callout danger"><b>Execution-location rule:</b> all <code>kubectl</code> and <code>cilium</code> commands in M6 must run from the <b>ADMIN / CONTROL-PLANE host</b> where cluster access already works. Do <b>not</b> run them from <code>w1</code> or <code>w2</code> unless those workers were intentionally configured with a valid kubeconfig.</div>
+
+  <div class="grid">
+    <div class="card wide"><div class="kicker">ADMIN / CONTROL-PLANE</div><h3>Cluster operations</h3><p>Run <code>kubectl</code>, <code>cilium</code>, cordon, drain, labels, pod deletion, status checks and validation here.</p></div>
+    <div class="card wide"><div class="kicker">TARGET WORKER</div><h3>Node-local operations</h3><p>Run only host commands such as inspecting <code>/etc/cni/net.d/</code>, checking kubelet logs and rebooting the node.</p></div>
+  </div>
+
+  <h4>M6A — ADMIN / CONTROL-PLANE: verify kubeconfig first</h4>
+  <div class="code"><button class="copy">Copy</button><pre><code># Run on the admin/control-plane host.
+kubectl cluster-info
+kubectl get nodes
+
+# If kubectl tries http://localhost:8080, STOP.
+# This host does not have a usable kubeconfig for the cluster.
+echo "${KUBECONFIG:-$HOME/.kube/config}"</code></pre></div>
+
+  <h4>M6B — ADMIN / CONTROL-PLANE: cordon, drain, label and restart Cilium</h4>
+  <div class="code"><button class="copy">Copy</button><pre><code># Run on the admin/control-plane host.
+export NODE=w1
+
+kubectl cordon "$NODE"
+
+# Review PodDisruptionBudget or unmanaged-pod errors.
+# Do not add --force blindly.
+kubectl drain "$NODE" \
+  --ignore-daemonsets \
+  --delete-emptydir-data
+
+kubectl label node "$NODE" --overwrite \
+  io.cilium.migration/cilium-default=true
+
+# Restart only the Cilium pod scheduled on this node.
+kubectl -n kube-system delete pod \
+  --field-selector spec.nodeName="$NODE" \
+  -l k8s-app=cilium
+
+# Confirm a replacement Cilium pod appears on the target node.
+kubectl -n kube-system get pods -l k8s-app=cilium -o wide
+cilium status --wait</code></pre></div>
+
+  <h4>M6C — TARGET WORKER (w1): verify CNI files, then reboot</h4>
+  <div class="code"><button class="copy">Copy</button><pre><code># Run locally on w1, using SSH/console/node-management access.
+sudo ls -la /etc/cni/net.d/
+
+# During migration you should now see Cilium's generated CNI config,
+# typically including:
+#   05-cilium.conflist
+#
+# Keep the existing Flannel config during controlled migration.
+# Do NOT manually delete CNI files here.
+
+sudo journalctl -u kubelet -n 50 --no-pager
+
+# Reboot ONLY the target worker.
+sudo reboot</code></pre></div>
+
+  <div class="callout warn"><b>After reboot:</b> return to the admin/control-plane host. Do not migrate the next node until <code>w1</code> is healthy and validated.</div>
+
+  <h4>M6D — ADMIN / CONTROL-PLANE: validate the migrated worker</h4>
+  <div class="code"><button class="copy">Copy</button><pre><code># Run on the admin/control-plane host.
+export NODE=w1
+
+kubectl get node "$NODE" -o wide
+kubectl wait --for=condition=Ready "node/$NODE" --timeout=180s
+cilium status --wait
+
+# Confirm Cilium is Running on w1.
+kubectl -n kube-system get pods -l k8s-app=cilium -o wide
+
+# Run a disposable test pod specifically on the migrated node.
+kubectl -n kube-system run --attach --rm --restart=Never verify-cilium \
+  --overrides='{"spec":{"nodeName":"'"$NODE"'","tolerations":[{"operator":"Exists"}]}}' \
+  --image=ghcr.io/nicolaka/netshoot:v0.13 \
+  -- /bin/bash -c 'ip -br addr; curl -s -k https://$KUBERNETES_SERVICE_HOST/healthz; echo'
+
+# PASS criteria:
+# 1. test pod gets an IP from the Cilium migration pool
+#    (10.245.0.0/16 in this module);
+# 2. Kubernetes API /healthz succeeds;
+# 3. node remains Ready;
+# 4. Cilium on the node is healthy.
+
+kubectl uncordon "$NODE"</code></pre></div>
+
+  <h4>If you accidentally run kubectl on w1</h4>
+  <div class="callout warn"><b>Typical error:</b> <code>The connection to the server localhost:8080 was refused</code>. This means the worker has no usable kubeconfig and <code>kubectl</code> is not connected to the Kubernetes API. Return to the admin/control-plane host and continue M6 there. Do not copy cluster-admin credentials to workers merely to make this lab work.</div>
+
+  <p>Repeat M6B → M6D for <code>w2</code>. Migrate the control-plane node last. If the control-plane node contains workloads that cannot be drained normally, inspect those workloads and any PodDisruptionBudgets before proceeding.</p>
+
+  <h3>M7 — Confirm every workload is now managed by Cilium</h3>
+  <div class="code"><button class="copy">Copy</button><pre><code>cilium status --wait
+kubectl get nodes -o wide
+kubectl get pods -A -o wide
+
+# Cilium endpoint view from an agent:
+CILIUM_POD=$(kubectl -n kube-system get pod -l k8s-app=cilium \
+  -o jsonpath='{.items[0].metadata.name}')
+kubectl -n kube-system exec "$CILIUM_POD" -- cilium-dbg endpoint list</code></pre></div>
+
+  <h3>M8 — Make Cilium primary and enable policy enforcement</h3>
+  <div class="code"><button class="copy">Copy</button><pre><code>cilium install 1.20.2 \
+  --values values-initial.yaml \
+  --dry-run-helm-values \
+  --set operator.unmanagedPodWatcher.restart=true \
+  --set cni.customConf=false \
+  --set policyEnforcementMode=default \
+  --set bpf.hostLegacyRouting=false \
+  > values-final.yaml
+
+diff -u values-initial.yaml values-final.yaml || true
+
+helm upgrade cilium cilium/cilium \
+  --version 1.20.2 \
+  --namespace kube-system \
+  --values values-final.yaml
+
+kubectl -n kube-system rollout restart daemonset cilium
+cilium status --wait
+
+kubectl delete -n kube-system ciliumnodeconfig cilium-default</code></pre></div>
+
+  <h3>M9 — Remove Flannel only after Cilium validation passes</h3>
+  <p>Use the removal method that matches how Flannel was installed.</p>
+
+  <div class="tabs" data-tabs="flannelremove">
+    <button class="tab active" data-tab="flannelhelm">Flannel installed by Helm</button>
+    <button class="tab" data-tab="flannelmanifest">Flannel installed by manifest</button>
+  </div>
+
+  <div class="tabpane active" data-pane="flannelhelm">
+  <div class="code"><button class="copy">Copy</button><pre><code>helm list -A | grep -i flannel
+
+# Typical Helm release:
+helm uninstall flannel -n kube-flannel
+
+# Remove namespace if Helm left it behind and it contains nothing required.
+kubectl delete namespace kube-flannel --ignore-not-found</code></pre></div>
+  </div>
+
+  <div class="tabpane" data-pane="flannelmanifest">
+  <div class="code"><button class="copy">Copy</button><pre><code># Prefer deleting the SAME manifest/release file originally used.
+# If the cluster used the standard release manifest and you retained it:
+kubectl delete -f kube-flannel.yml
+
+# Inventory leftovers rather than blindly deleting unknown resources.
+kubectl get ns,ds,cm,sa,clusterrole,clusterrolebinding -A \
+  -l app=flannel 2>/dev/null || true
+kubectl get clusterrole,clusterrolebinding | grep -i flannel || true</code></pre></div>
+  </div>
+
+  <div class="callout warn"><b>Do not manually delete random CNI binaries or iptables rules during the migration.</b> CNI plugins can leave interfaces/rules behind. After Cilium is primary and stable, a controlled rolling reboot is the cleanest way to clear stale node state.</div>
+
+  <h3>M10 — Final Cilium validation</h3>
+  <div class="code"><button class="copy">Copy</button><pre><code>cilium status --wait
+
+# Comprehensive Cilium connectivity validation.
+# This creates temporary test workloads/policies and can take several minutes.
+cilium connectivity test
+
+# Confirm Flannel workloads are gone.
+kubectl get pods -A | grep -i flannel || echo "No Flannel pods found"
+
+# Confirm nodes and system pods are healthy.
+kubectl get nodes
+kubectl get pods -A
+
+# Only continue to the NetworkPolicy labs when all nodes are Ready
+# and Cilium validation succeeds.</code></pre></div>
+
+  <div class="callout good"><b>Migration exit criteria:</b> all nodes Ready; Cilium healthy; test pods can reach the API; CoreDNS works; cross-node pod connectivity works; Services work; <code>cilium connectivity test</code> passes; Flannel workloads are removed.</div>
+
+  <details><summary>What if the migration breaks?</summary><div>
+    <p>Stop after the affected node. Do not migrate the remaining nodes. Inspect <code>cilium status</code>, the Cilium pod on that node, kubelet events and the files under <code>/etc/cni/net.d/</code>. Because migration is node-by-node, healthy unmigrated nodes remain a useful comparison point.</p>
+    <div class="code"><button class="copy">Copy</button><pre><code>kubectl get node "$NODE" -o wide
+kubectl -n kube-system get pods -o wide | grep cilium
+kubectl -n kube-system logs -l k8s-app=cilium --tail=100
+
+# On the affected node:
+sudo ls -la /etc/cni/net.d/
+sudo journalctl -u kubelet -n 100 --no-pager</code></pre></div>
+  </div></details>
+</section>
+
+<section id="policy-design">
+  <div class="section-head"><h2>Policy Design Worksheet</h2><span class="badge green">production habit</span></div>
+  <p>Before writing YAML, express the requirement as a traffic contract. This prevents “policy by trial and error.”</p>
+
+  <table>
+    <thead><tr><th>Source</th><th>Destination</th><th>Protocol / Port</th><th>Reason</th><th>Expected result</th></tr></thead>
+    <tbody>
+      <tr><td><code>app=frontend</code></td><td><code>app=api</code></td><td>TCP/8080</td><td>Application request</td><td>ALLOW</td></tr>
+      <tr><td><code>app=stranger</code></td><td><code>app=api</code></td><td>TCP/8080</td><td>No business requirement</td><td>DENY</td></tr>
+      <tr><td><code>app=api</code></td><td>cluster DNS</td><td>UDP/TCP 53</td><td>Name resolution</td><td>ALLOW</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout good"><b>Operational rule:</b> Every ALLOW row should have a neighboring DENY test. A policy that only proves intended traffic works does not prove unwanted traffic is blocked.</div>
+
+  <h3>Five-minute review checklist</h3>
+  <div class="grid">
+    <div class="card"><b>1. Selector</b><p class="muted">Does <code>podSelector</code> match the pods you think it matches?</p></div>
+    <div class="card"><b>2. Direction</b><p class="muted">Ingress, egress, or both?</p></div>
+    <div class="card"><b>3. Peer scope</b><p class="muted">Same namespace, selected namespace, or CIDR?</p></div>
+    <div class="card"><b>4. Port</b><p class="muted">Destination protocol and port correct?</p></div>
+    <div class="card"><b>5. Additive policies</b><p class="muted">Could another policy already allow the flow?</p></div>
+    <div class="card"><b>6. Platform dependency</b><p class="muted">DNS, monitoring, service mesh, admission or control-plane traffic?</p></div>
+  </div>
+
+  <h3>Standard NetworkPolicy boundaries</h3>
+  <div class="callout">
+    Standard Kubernetes NetworkPolicy is primarily an L3/L4 control. It does not natively express HTTP paths, users, JWT claims, TLS identities or “deny this specific rule after another allow.” If a course later introduces Cilium, Calico or service-mesh policy, keep those extensions conceptually separate from the standard API taught here.
+  </div>
+</section>
+
+<section id="labs">
+  <div class="section-head"><h2>Hands‑on Labs</h2><span class="badge green">end-to-end</span></div>
+  <div class="callout"><b>Lab design:</b> these labs now assume the prerequisite migration completed successfully and <b>Cilium is the active CNI with policy enforcement enabled</b>. Core policy tests use in-cluster pods so trainees prove enforcement rather than merely create YAML.</div>
+
+
+
+  <div class="callout warn"><b>Cilium gate before Lab 0:</b> do not continue unless the migration section passed. The commands below verify that Cilium is healthy and Flannel is no longer the active workload CNI.</div>
+  <div class="code"><button class="copy">Copy</button><pre><code>cilium status --wait
+kubectl get pods -n kube-system -l k8s-app=cilium -o wide
+kubectl get pods -A | grep -i flannel || echo "No Flannel pods found"
+
+# Standard NetworkPolicy API must exist.
+kubectl api-resources | grep -i networkpolic
+
+# This proves API availability, not behavior.
+kubectl get networkpolicy -A</code></pre></div>
+  <div class="lab"><div class="lab-head"><div class="lab-num">0</div><div><b>Preflight — prove your CNI enforces NetworkPolicy</b><div class="muted">Required before every later lab</div></div></div>
+  <div class="lab-body">
+    <p>Create a disposable namespace and two pods, prove connectivity, apply deny ingress, then prove traffic is blocked.</p>
+    <div class="code"><button class="copy">Copy</button><pre><code>export NPNS=np-lab
+kubectl create namespace "$NPNS"
+
+kubectl -n "$NPNS" run server --image=nginx:alpine --labels=app=server
+kubectl -n "$NPNS" run client --image=busybox:1.36 --labels=app=client \
+  --command -- sh -c 'sleep 36000'
+kubectl -n "$NPNS" expose pod server --port=80
+
+kubectl -n "$NPNS" wait --for=condition=Ready pod/server pod/client --timeout=120s
+
+# Baseline: should succeed
+kubectl -n "$NPNS" exec client -- wget -qO- --timeout=3 http://server
+
+cat <<'EOF' | kubectl apply -f -
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: deny-server-ingress
+  namespace: np-lab
+spec:
+  podSelector:
+    matchLabels:
+      app: server
+  policyTypes:
+  - Ingress
+EOF
+
+# Enforcement test: this should now fail/timeout
+kubectl -n "$NPNS" exec client -- wget -qO- --timeout=3 http://server
+echo "exit=$?"
+
+# If the request still succeeds repeatedly, stop:
+# your current CNI/setup may not enforce standard NetworkPolicy.</code></pre></div>
+    <div class="check"><input type="checkbox"><span>I verified baseline connectivity succeeds before policy.</span></div>
+    <div class="check"><input type="checkbox"><span>I verified connectivity fails after the deny policy.</span></div>
+  </div></div>
+
+  <div class="lab"><div class="lab-head"><div class="lab-num">1</div><div><b>Ingress isolation + selective allow</b><div class="muted">Learn destination-side policy logic</div></div></div>
+  <div class="lab-body">
+    <div class="code"><button class="copy">Copy</button><pre><code># Allow only app=client to reach app=server on TCP/80
+cat <<'EOF' | kubectl apply -f -
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: server-from-client
+  namespace: np-lab
+spec:
+  podSelector:
+    matchLabels:
+      app: server
+  policyTypes: [Ingress]
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          app: client
+    ports:
+    - protocol: TCP
+      port: 80
+EOF
+
+# Existing client should succeed again
+kubectl -n "$NPNS" exec client -- wget -qO- --timeout=3 http://server
+
+# Untrusted client should fail
+kubectl -n "$NPNS" run stranger --image=busybox:1.36 --labels=app=stranger \
+  --command -- sh -c 'sleep 36000'
+kubectl -n "$NPNS" wait --for=condition=Ready pod/stranger --timeout=120s
+kubectl -n "$NPNS" exec stranger -- wget -qO- --timeout=3 http://server
+echo "exit=$?"</code></pre></div>
+    <p><b>Expected:</b> <code>client</code> succeeds; <code>stranger</code> fails. The original deny policy remains present, but the new allow policy adds a permitted path.</p>
+  </div></div>
+
+
+  <div class="lab"><div class="lab-head"><div class="lab-num">1B</div><div><b>Cilium visibility — observe allowed and denied flows</b><div class="muted">Optional but highly valuable</div></div></div>
+  <div class="lab-body">
+    <p>Cilium exposes flow visibility through Hubble. The <code>cilium</code> CLI enables Hubble, but <code>hubble observe</code> is provided by the separate Hubble CLI, so install it before using the commands below.</p>
+
+    <h4>Install the Hubble CLI</h4>
+    <div class="code"><button class="copy">Copy</button><pre><code>HUBBLE_VERSION=$(curl -s https://raw.githubusercontent.com/cilium/hubble/main/stable.txt)
+HUBBLE_ARCH=amd64
+if [ "$(uname -m)" = "aarch64" ]; then HUBBLE_ARCH=arm64; fi
+
+curl -L --fail --remote-name-all \
+  https://github.com/cilium/hubble/releases/download/${HUBBLE_VERSION}/hubble-linux-${HUBBLE_ARCH}.tar.gz{,.sha256sum}
+
+sha256sum --check hubble-linux-${HUBBLE_ARCH}.tar.gz.sha256sum
+sudo tar xzvfC hubble-linux-${HUBBLE_ARCH}.tar.gz /usr/local/bin
+rm hubble-linux-${HUBBLE_ARCH}.tar.gz{,.sha256sum}
+
+hubble version</code></pre></div>
+
+    <h4>Enable and validate Hubble</h4>
+    <div class="code"><button class="copy">Copy</button><pre><code>cilium hubble enable
+cilium status --wait
+
+# -P automatically establishes a local port-forward to Hubble Relay.
+hubble status -P</code></pre></div>
+
+    <h4>Observe the NetworkPolicy lab</h4>
+    <div class="code"><button class="copy">Copy</button><pre><code># Terminal 1
+hubble observe -P --namespace "$NPNS" --follow
+
+# Terminal 2: allowed request
+kubectl -n "$NPNS" exec client -- \
+  wget -qO- --timeout=3 http://server
+
+# Terminal 2: denied request
+kubectl -n "$NPNS" exec stranger -- \
+  wget -qO- --timeout=3 http://server || true</code></pre></div>
+
+    <p>Look for forwarding on the allowed flow and a policy-denied/drop verdict for the disallowed flow. Hubble can only observe endpoints managed by Cilium.</p>
+    <div class="callout"><b>Learning objective:</b> progress from “the request timed out” to observing the concrete source → destination flow and its enforcement verdict.</div>
+  </div></div>
+
+  <div class="lab"><div class="lab-head"><div class="lab-num">2</div><div><b>Cross-namespace selector lab</b><div class="muted">Prove namespace + pod selector AND logic</div></div></div>
+  <div class="lab-body">
+    <div class="code"><button class="copy">Copy</button><pre><code>kubectl create namespace np-web
+kubectl label namespace np-web access=np-lab
+
+kubectl -n np-web run web-client --image=busybox:1.36 --labels=role=web \
+  --command -- sh -c 'sleep 36000'
+kubectl -n np-web wait --for=condition=Ready pod/web-client --timeout=120s
+
+# Allow role=web, but only inside namespaces with access=np-lab
+cat <<'EOF' | kubectl apply -f -
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: server-from-authorized-web-ns
+  namespace: np-lab
+spec:
+  podSelector:
+    matchLabels:
+      app: server
+  policyTypes: [Ingress]
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          access: np-lab
+      podSelector:
+        matchLabels:
+          role: web
+    ports:
+    - protocol: TCP
+      port: 80
+EOF
+
+SERVER_IP=$(kubectl -n np-lab get svc server -o jsonpath='{.spec.clusterIP}')
+kubectl -n np-web exec web-client -- wget -qO- --timeout=3 "http://${SERVER_IP}"
+
+# Now remove the namespace authorization label
+kubectl label namespace np-web access-
+kubectl -n np-web exec web-client -- wget -qO- --timeout=3 "http://${SERVER_IP}"
+echo "exit=$?"</code></pre></div>
+    <p><b>Expected:</b> access works while namespace label and pod label both match; it fails after removing the namespace label.</p>
+  </div></div>
+
+  <div class="lab"><div class="lab-head"><div class="lab-num">3</div><div><b>Egress lockdown, DNS recovery and application recovery</b><div class="muted">Prove each dependency separately</div></div></div>
+  <div class="lab-body">
+    <p>This lab avoids hiding several concepts behind one test. First deny all egress from <code>app=client</code>. Then restore DNS. Finally restore access to <code>app=server</code>.</p>
+
+    <h4>Step 3A — Capture the server Pod IP and DNS Pod IP</h4>
+    <div class="code"><button class="copy">Copy</button><pre><code>export SERVER_POD_IP=$(kubectl -n "$NPNS" get pod server -o jsonpath='{.status.podIP}')
+echo "server pod IP: $SERVER_POD_IP"
+
+# Discover likely cluster DNS pods.
+kubectl -n kube-system get pods --show-labels | grep -Ei 'coredns|kube-dns'
+
+# For a typical kubeadm/CoreDNS cluster:
+export DNS_POD_IP=$(kubectl -n kube-system get pods -l k8s-app=kube-dns \
+  -o jsonpath='{range .items[0:1]}{.status.podIP}{end}')
+echo "dns pod IP: $DNS_POD_IP"
+
+# If empty, STOP this step, inspect the labels above, and substitute
+# the DNS selector used by your distribution before continuing.</code></pre></div>
+
+    <h4>Step 3B — Prove baseline egress works</h4>
+    <div class="code"><button class="copy">Copy</button><pre><code># Direct application traffic
+kubectl -n "$NPNS" exec client -- wget -qO- --timeout=3 "http://${SERVER_POD_IP}"
+
+# Direct DNS query to the discovered DNS pod
+kubectl -n "$NPNS" exec client -- nslookup server.np-lab.svc.cluster.local "$DNS_POD_IP"</code></pre></div>
+
+    <h4>Step 3C — Deny all egress from only app=client</h4>
+    <div class="code"><button class="copy">Copy</button><pre><code>cat <<'EOF' | kubectl apply -f -
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: client-deny-all-egress
+  namespace: np-lab
+spec:
+  podSelector:
+    matchLabels:
+      app: client
+  policyTypes:
+  - Egress
+EOF
+
+# Both tests should now fail.
+kubectl -n "$NPNS" exec client -- wget -qO- --timeout=3 "http://${SERVER_POD_IP}"
+echo "HTTP exit=$?"
+
+kubectl -n "$NPNS" exec client -- nslookup server.np-lab.svc.cluster.local "$DNS_POD_IP"
+echo "DNS exit=$?"</code></pre></div>
+
+    <h4>Step 3D — Restore DNS only</h4>
+    <div class="code"><button class="copy">Copy</button><pre><code>cat <<'EOF' | kubectl apply -f -
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: client-allow-dns
+  namespace: np-lab
+spec:
+  podSelector:
+    matchLabels:
+      app: client
+  policyTypes:
+  - Egress
+  egress:
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: kube-system
+      podSelector:
+        matchLabels:
+          k8s-app: kube-dns
+    ports:
+    - protocol: UDP
+      port: 53
+    - protocol: TCP
+      port: 53
+EOF
+
+# DNS should recover.
+kubectl -n "$NPNS" exec client -- nslookup server.np-lab.svc.cluster.local "$DNS_POD_IP"
+
+# HTTP should STILL fail because only DNS was restored.
+kubectl -n "$NPNS" exec client -- wget -qO- --timeout=3 "http://${SERVER_POD_IP}"
+echo "HTTP exit=$?"</code></pre></div>
+
+    <h4>Step 3E — Restore application egress</h4>
+    <div class="code"><button class="copy">Copy</button><pre><code>cat <<'EOF' | kubectl apply -f -
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: client-allow-server
+  namespace: np-lab
+spec:
+  podSelector:
+    matchLabels:
+      app: client
+  policyTypes:
+  - Egress
+  egress:
+  - to:
+    - podSelector:
+        matchLabels:
+          app: server
+    ports:
+    - protocol: TCP
+      port: 80
+EOF
+
+# Direct Pod traffic should now work again.
+kubectl -n "$NPNS" exec client -- wget -qO- --timeout=3 "http://${SERVER_POD_IP}"</code></pre></div>
+
+    <div class="callout good"><b>What this proves:</b> NetworkPolicies are additive. The deny-all policy keeps the client egress-isolated, while separate allow policies independently restore DNS and application traffic.</div>
+    <div class="callout warn"><b>DNS portability:</b> <code>k8s-app=kube-dns</code> is common on kubeadm/CoreDNS clusters but is not universal. The lab deliberately makes trainees inspect DNS labels first. If your distribution uses different labels, change only the DNS <code>podSelector</code>.</div>
+  </div></div>
+
+  <div class="lab"><div class="lab-head"><div class="lab-num">4</div><div><b>Progressive lockdown exercise</b><div class="muted">Turn an open namespace into least privilege</div></div></div>
+  <div class="lab-body">
+    <ol>
+      <li>Record required flows for every pod role.</li><li>Apply namespace-wide default deny ingress.</li><li>Restore only required ingress.</li>
+      <li>Apply default deny egress to one role first.</li><li>Restore DNS and required destinations.</li><li>Repeat role by role.</li>
+      <li>Keep a positive and negative test for each intended trust relationship.</li>
+    </ol>
+    <div class="callout good"><b>Success criterion:</b> a policy rollout is not complete when desired traffic works. It is complete when desired traffic works <em>and representative undesired traffic is demonstrably blocked</em>.</div>
+  </div></div>
+
+
+  <h3>Lab Verification Matrix</h3>
+  <table>
+    <thead><tr><th>Lab</th><th>Positive proof</th><th>Negative proof</th><th>Primary concept</th></tr></thead>
+    <tbody>
+      <tr><td>M0–M10</td><td>Cilium healthy; connectivity test passes</td><td>Flannel no longer active after migration</td><td>Controlled CNI migration</td></tr>
+      <tr><td>0</td><td>Baseline client → server works</td><td>Fails after ingress deny</td><td>CNI actually enforces policy</td></tr>
+      <tr><td>1</td><td><code>app=client</code> reaches server</td><td><code>app=stranger</code> cannot</td><td>Pod selector + ingress allow</td></tr>
+      <tr><td>1B</td><td>Allowed flow visible in Hubble</td><td>Denied flow visible as policy drop</td><td>Observability of enforcement</td></tr>
+      <tr><td>2</td><td>Authorized namespace + pod label works</td><td>Removing namespace label blocks access</td><td>namespaceSelector AND podSelector</td></tr>
+      <tr><td>3</td><td>DNS and app traffic recover only after their allow policies</td><td>Both fail under egress deny; HTTP stays denied after DNS-only allow</td><td>Egress isolation + additive allows</td></tr>
+      <tr><td>4</td><td>Required business flows remain healthy</td><td>Representative unauthorized flows remain blocked</td><td>Progressive least privilege</td></tr>
+    </tbody>
+  </table>
+
+  <details><summary>Lab cleanup</summary><div class="code"><button class="copy">Copy</button><pre><code>kubectl delete namespace np-lab np-web --ignore-not-found</code></pre></div></details>
+</section>
+
+
+<section id="misconceptions">
+  <div class="section-head"><h2>Common Misconceptions</h2><span class="badge amber">exam + production</span></div>
+  <table>
+    <thead><tr><th>Misconception</th><th>Correct model</th></tr></thead>
+    <tbody>
+      <tr><td>“A namespace is network-isolated by default.”</td><td>No. Pods are normally non-isolated until NetworkPolicy selects them for a direction.</td></tr>
+      <tr><td>“The last policy wins.”</td><td>No. Standard NetworkPolicies are additive.</td></tr>
+      <tr><td>“A deny-all policy overrides an allow policy.”</td><td>No. Once isolated, any applicable allow rule can permit the matching traffic.</td></tr>
+      <tr><td>“Ingress policy controls Kubernetes Ingress objects.”</td><td>No. NetworkPolicy ingress means traffic entering selected pods.</td></tr>
+      <tr><td>“A Service is a NetworkPolicy identity.”</td><td>Policies fundamentally reason about selected pods, namespaces and IP blocks; Service/NAT paths can introduce implementation details.</td></tr>
+      <tr><td>“If kubectl accepts the object, enforcement works.”</td><td>No. Only a traffic test proves enforcement.</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section id="troubleshooting">
+  <div class="section-head"><h2>Troubleshooting Playbook</h2><span class="badge red">symptom → proof</span></div>
+  <table><thead><tr><th>Symptom</th><th>What to check first</th><th>Typical cause</th></tr></thead><tbody>
+    <tr><td>Policy exists but traffic still flows</td><td>CNI enforcement test</td><td>CNI does not enforce NetworkPolicy, wrong pod selector, or traffic path has special handling.</td></tr>
+    <tr><td>Everything breaks after egress deny</td><td>DNS resolution</td><td>No DNS egress allowance.</td></tr>
+    <tr><td>Same-namespace works, cross-namespace fails</td><td>Namespace labels + selector indentation</td><td><code>podSelector</code> alone is namespace-local.</td></tr>
+    <tr><td>Policy seems stricter but traffic remains allowed</td><td>List all policies selecting the pod</td><td>Another applicable policy adds the allowed flow; policies are additive.</td></tr>
+    <tr><td>IPBlock behaves unexpectedly</td><td>Observe actual source/destination IPs</td><td>NAT or Service/cloud implementation changes addresses before policy evaluation.</td></tr>
+  </tbody></table>
+
+  
+<h3>Cilium-specific diagnostics</h3>
+<div class="code"><button class="copy">Copy</button><pre><code>cilium status
+cilium connectivity test
+
+# Inspect endpoints known to a Cilium agent.
+CILIUM_POD=$(kubectl -n kube-system get pod -l k8s-app=cilium \
+  -o jsonpath='{.items[0].metadata.name}')
+kubectl -n kube-system exec "$CILIUM_POD" -- cilium-dbg endpoint list
+
+# Inspect standard Kubernetes policies.
+kubectl get networkpolicy -A
+
+# If Hubble is enabled:
+hubble observe -P --namespace &lt;namespace&gt; --follow</code></pre></div>
+
+<h3>Diagnostic commands</h3>
+  <div class="code"><button class="copy">Copy</button><pre><code># Policies and selected pods
+kubectl get networkpolicy -A
+kubectl -n &lt;ns&gt; describe networkpolicy &lt;name&gt;
+kubectl -n &lt;ns&gt; get pods --show-labels -o wide
+
+# Namespace labels
+kubectl get namespaces --show-labels
+
+# Services / endpoints / endpoint slices
+kubectl -n &lt;ns&gt; get svc
+kubectl -n &lt;ns&gt; get endpoints
+kubectl -n &lt;ns&gt; get endpointslices
+
+# Test from the same source pod that experiences the problem
+kubectl -n &lt;ns&gt; exec &lt;client-pod&gt; -- sh</code></pre></div>
+
+  <div class="callout"><b>Debugging discipline:</b> first prove application reachability without the policy constraint, then add policy, then test the exact source → destination → protocol → port tuple. Avoid changing Deployment, Service and policy simultaneously.</div>
+</section>
+
+<section>
+  <div class="section-head"><h2>Implementation Caveats Worth Remembering</h2></div>
+  <div class="grid">
+    <div class="card wide"><h3>Host traffic</h3><p>Traffic involving the pod’s node and <code>hostNetwork</code> workloads can have implementation-specific behavior. Treat it as a CNI-specific validation point.</p></div>
+    <div class="card wide"><h3>L7 is outside standard NetworkPolicy</h3><p>Standard NetworkPolicy understands addresses, peers, protocols and ports — not HTTP paths, JWT claims or application identities. Some CNIs expose additional non-standard policy APIs for L7.</p></div>
+    <div class="card wide"><h3>Services are not policy identities</h3><p>Write rules around pod/namespace identities and observable destination behavior. A Service VIP may be rewritten before or after enforcement depending on implementation.</p></div>
+    <div class="card wide"><h3>Labels are security data</h3><p>If authorization depends on a label, control who can modify that label. RBAC/admission policy becomes part of the trust model.</p></div>
+  </div>
+</section>
+
+<section id="checks">
+  <div class="section-head"><h2>Knowledge Check</h2><span id="score" class="badge green">0 / 6</span></div>
+  <div class="quizq" data-answer="1"><b>1. No NetworkPolicy selects a pod for ingress. What is the default?</b><button>Ingress is denied</button><button>Ingress is allowed</button><button>Only same-namespace ingress works</button></div>
+  <div class="quizq" data-answer="2"><b>2. Two ingress policies select the same pod. Policy A allows frontend; Policy B allows monitoring. What happens?</b><button>Only the newest policy applies</button><button>The stricter policy wins</button><button>Both allowances are combined</button></div>
+  <div class="quizq" data-answer="0"><b>3. A source pod is egress-isolated and a destination is ingress-isolated. For a new connection to succeed:</b><button>Both directions must permit the flow</button><button>Only destination ingress matters</button><button>Only source egress matters</button></div>
+  <div class="quizq" data-answer="1"><b>4. A peer contains both namespaceSelector and podSelector in the same list item. Semantics?</b><button>OR</button><button>AND</button><button>Policy priority</button></div>
+  <div class="quizq" data-answer="2"><b>5. Why can default-deny egress make applications appear broken even when their server is allowed?</b><button>Services stop creating endpoints</button><button>kube-proxy is disabled</button><button>DNS may also be blocked</button></div>
+  <div class="quizq" data-answer="0"><b>6. What proves NetworkPolicy enforcement?</b><button>A traffic test showing expected allow and deny behavior</button><button><code>kubectl get networkpolicy</code> returns the object</button><button>The YAML passes client-side parsing</button></div>
+</section>
+
+<section>
+  <div class="section-head"><h2>What you should now be able to explain</h2></div>
+  <ul>
+    <li>Why NetworkPolicy is default-allow until a selected pod becomes isolated for a direction.</li>
+    <li>Why ingress and egress are independent and why both sides can matter for a single connection.</li>
+    <li>Why NetworkPolicies are additive, not first-match or priority ordered.</li>
+    <li>How <code>podSelector</code>, <code>namespaceSelector</code>, <code>matchLabels</code>, <code>matchExpressions</code> and <code>ipBlock</code> change peer selection.</li>
+    <li>How to implement default-deny patterns without accidentally overlooking DNS and required platform flows.</li>
+    <li>How to prove CNI enforcement using positive and negative connectivity tests.</li>
+  </ul>
+</section>
+
+
+<section id="validation-status">
+  <div class="section-head"><h2>Validation Status</h2><span class="badge green">reviewed</span></div>
+  <p>This module's migration flow is aligned to the Cilium 1.20.2 controlled-migration procedure and its NetworkPolicy semantics align to the Kubernetes <code>networking.k8s.io/v1</code> model.</p>
+  <table>
+    <thead><tr><th>Area</th><th>Status</th><th>Important condition</th></tr></thead>
+    <tbody>
+      <tr><td>Flannel → Cilium migration sequence</td><td>PASS</td><td>Distinct unused Cilium pod CIDR and overlay port required.</td></tr>
+      <tr><td>Node-by-node takeover</td><td>PASS</td><td>Migrate workers before the control plane and validate each node before continuing.</td></tr>
+      <tr><td>NetworkPolicy labs 0–4</td><td>PASS</td><td>Cilium policy enforcement must be enabled after migration.</td></tr>
+      <tr><td>Hubble observation lab</td><td>PASS</td><td>Hubble CLI is a separate client and is now explicitly installed.</td></tr>
+      <tr><td>DNS egress lab</td><td>PASS with discovery step</td><td>CoreDNS labels differ across distributions; inspect first.</td></tr>
+      <tr><td>Runtime guarantee</td><td>Environment-dependent</td><td>Firewall, kernel, kubeadm configuration, CIDRs and existing workloads must match documented prerequisites.</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<div class="footer">
+  <b>Kubernetes Network Policies — Module 6</b><br>
+  Self-study reference. Examples use <code>networking.k8s.io/v1</code>. Always validate behavior against the CNI and Kubernetes distribution used in your lab or production cluster.
+</div>
+</main>
+</div>
+
+<script>
+const root=document.documentElement;
+const themeBtn=document.getElementById('themeBtn');
+themeBtn.addEventListener('click',()=>{
+  root.dataset.theme=root.dataset.theme==='dark'?'light':'dark';
+  themeBtn.textContent=root.dataset.theme==='dark'?'☀ Theme':'☾ Theme';
+  localStorage.setItem('np-theme',root.dataset.theme);
+});
+const saved=localStorage.getItem('np-theme'); if(saved){root.dataset.theme=saved;}
+
+document.querySelectorAll('.copy').forEach(btn=>{
+  btn.addEventListener('click',async()=>{
+    const text=btn.parentElement.querySelector('pre').innerText;
+    try{await navigator.clipboard.writeText(text);btn.textContent='Copied ✓';}
+    catch(e){const r=document.createRange();r.selectNodeContents(btn.parentElement.querySelector('pre'));const s=getSelection();s.removeAllRanges();s.addRange(r);document.execCommand('copy');btn.textContent='Copied ✓';}
+    setTimeout(()=>btn.textContent='Copy',1200);
+  });
+});
+
+document.querySelectorAll('[data-tabs]').forEach(group=>{
+  const name=group.dataset.tabs;
+  group.querySelectorAll('.tab').forEach(tab=>tab.addEventListener('click',()=>{
+    group.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t===tab));
+    const container=group.parentElement;
+    container.querySelectorAll(':scope > .tabpane').forEach(p=>p.classList.toggle('active',p.dataset.pane===tab.dataset.tab));
+  }));
+});
+
+let answered=0,score=0;
+document.querySelectorAll('.quizq').forEach(q=>{
+  q.querySelectorAll('button').forEach((b,i)=>b.addEventListener('click',()=>{
+    if(q.dataset.done)return;
+    q.dataset.done='1'; answered++;
+    const good=Number(q.dataset.answer);
+    q.querySelectorAll('button')[good].classList.add('correct');
+    if(i===good)score++;else b.classList.add('wrong');
+    document.getElementById('score').textContent=score+' / 6';
+  }));
+});
+
+const sections=[...document.querySelectorAll('main section[id], header[id]')];
+const nav=[...document.querySelectorAll('#nav a')];
+const progress=document.getElementById('progressBar');
+const obs=new IntersectionObserver(entries=>{
+  entries.forEach(e=>{
+    if(e.isIntersecting){
+      nav.forEach(a=>a.classList.toggle('active',a.getAttribute('href')==='#'+e.target.id));
+    }
+  });
+},{rootMargin:'-25% 0px -60% 0px'});
+sections.forEach(s=>obs.observe(s));
+addEventListener('scroll',()=>{
+  const h=document.documentElement.scrollHeight-innerHeight;
+  progress.style.width=(h?scrollY/h*100:0)+'%';
+},{passive:true});
+</script>
+</body>
+</html>
