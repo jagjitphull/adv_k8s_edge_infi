@@ -1,0 +1,1019 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kubernetes Troubleshooting & Best Practices — Interactive Field Manual v1.2.1 Verified</title>
+<style>
+:root{
+  --bg:#07111f; --panel:#0d1b2d; --panel2:#10243b; --text:#e8f1ff; --muted:#9fb4cc;
+  --line:#27435f; --accent:#5eead4; --accent2:#60a5fa; --warn:#fbbf24; --bad:#fb7185;
+  --good:#34d399; --violet:#a78bfa; --shadow:0 18px 45px rgba(0,0,0,.28);
+  --code:#020617; --chip:#14283f;
+}
+[data-theme="light"]{
+  --bg:#eef5fb; --panel:#ffffff; --panel2:#f6fbff; --text:#142238; --muted:#536b84;
+  --line:#c8d9e8; --accent:#0f766e; --accent2:#2563eb; --warn:#b45309; --bad:#be123c;
+  --good:#047857; --violet:#6d28d9; --shadow:0 16px 35px rgba(31,64,97,.13);
+  --code:#0f172a; --chip:#e7f0f7;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0; background:
+    radial-gradient(circle at 15% 10%, rgba(94,234,212,.09), transparent 28%),
+    radial-gradient(circle at 88% 8%, rgba(96,165,250,.11), transparent 30%),
+    var(--bg);
+  color:var(--text); font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
+  line-height:1.58;
+}
+button,input{font:inherit}
+a{color:var(--accent2)}
+.wrap{width:min(1460px,94vw); margin:auto}
+.hero{padding:52px 0 28px}
+.eyebrow{font-size:.78rem;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);font-weight:800}
+h1{font-size:clamp(2.2rem,5vw,4.7rem);line-height:1.02;margin:.25rem 0 1rem;letter-spacing:-.04em}
+h2{font-size:clamp(1.55rem,2.6vw,2.25rem);margin:0 0 12px}
+h3{margin:0 0 8px}
+p{margin:.45rem 0 .9rem}
+.hero-grid{display:grid;grid-template-columns:1.2fr .8fr;gap:24px;align-items:stretch}
+.card,.section,.lab,.assume,.mini{
+  background:linear-gradient(180deg,rgba(255,255,255,.035),rgba(255,255,255,.012)),var(--panel);
+  border:1px solid var(--line);border-radius:20px;box-shadow:var(--shadow)
+}
+.card{padding:24px}
+.hero-note{font-size:1.03rem;color:var(--muted);max-width:80ch}
+.badge-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}
+.badge{background:var(--chip);border:1px solid var(--line);border-radius:999px;padding:6px 10px;font-size:.82rem}
+.controls{position:sticky;top:0;z-index:30;background:color-mix(in srgb,var(--bg) 89%,transparent);backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}
+.controls .wrap{display:flex;gap:10px;align-items:center;justify-content:space-between;padding:10px 0}
+.nav{display:flex;gap:8px;overflow:auto;scrollbar-width:none}
+.nav a{white-space:nowrap;text-decoration:none;color:var(--text);background:var(--chip);padding:8px 11px;border-radius:10px;border:1px solid var(--line);font-size:.87rem}
+button{border:1px solid var(--line);background:var(--chip);color:var(--text);padding:8px 11px;border-radius:10px;cursor:pointer}
+button:hover{transform:translateY(-1px)}
+main{padding:28px 0 80px}
+.section{padding:26px;margin:24px 0}
+.kicker{color:var(--accent);font-weight:800;font-size:.78rem;letter-spacing:.12em;text-transform:uppercase}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
+.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+.mini{padding:18px;box-shadow:none}
+.mini strong{color:var(--accent)}
+.assume{padding:14px 16px;border-left:5px solid var(--warn);box-shadow:none;background:color-mix(in srgb,var(--warn) 7%,var(--panel))}
+.assume b{color:var(--warn)}
+.flow{padding:16px;border:1px solid var(--line);border-radius:18px;background:var(--panel2);overflow:auto}
+.flow svg{width:100%;min-width:800px;height:auto;display:block}
+.svg-node{fill:var(--panel);stroke:var(--line);stroke-width:2}
+.svg-text{fill:var(--text);font-size:16px;font-weight:700}
+.svg-sub{fill:var(--muted);font-size:13px}
+.svg-line{stroke:var(--accent2);stroke-width:3;fill:none;stroke-dasharray:10 7;animation:dash 7s linear infinite}
+@keyframes dash{to{stroke-dashoffset:-150}}
+.tabs{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0}
+.tabbtn.active{border-color:var(--accent);color:var(--accent)}
+.tabpanel{display:none}.tabpanel.active{display:block;animation:fade .22s ease}
+@keyframes fade{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
+.codewrap{position:relative;margin:12px 0 18px}
+pre{
+  overflow:auto;background:var(--code);color:#dbeafe;border:1px solid #243246;border-radius:15px;
+  padding:18px 16px;margin:0;font: .9rem/1.55 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+.copy{position:absolute;right:9px;top:9px;background:#17233a;color:#e5efff;border-color:#33445e;padding:5px 9px;font-size:.78rem}
+.cmd-title{font-weight:750;margin:8px 0 5px}
+.callout{padding:13px 15px;border-radius:13px;border:1px solid var(--line);margin:12px 0}
+.callout.good{border-left:5px solid var(--good)}
+.callout.warn{border-left:5px solid var(--warn)}
+.callout.bad{border-left:5px solid var(--bad)}
+.callout.info{border-left:5px solid var(--accent2)}
+details{border:1px solid var(--line);background:var(--panel2);border-radius:14px;padding:12px 15px;margin:10px 0}
+summary{cursor:pointer;font-weight:800}
+table{width:100%;border-collapse:collapse;margin:12px 0;font-size:.93rem}
+th,td{border-bottom:1px solid var(--line);padding:11px;text-align:left;vertical-align:top}
+th{color:var(--accent)}
+.pill{display:inline-block;padding:3px 7px;border-radius:999px;font-size:.77rem;border:1px solid var(--line);background:var(--chip)}
+.red{color:var(--bad)} .yellow{color:var(--warn)} .green{color:var(--good)} .blue{color:var(--accent2)}
+.steps{counter-reset:step;padding-left:0}
+.steps li{list-style:none;margin:11px 0;padding:13px 14px 13px 54px;border:1px solid var(--line);border-radius:14px;background:var(--panel2);position:relative}
+.steps li:before{counter-increment:step;content:counter(step);position:absolute;left:13px;top:12px;width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:var(--accent2);color:white;font-weight:800}
+.lab{padding:20px;margin:16px 0;box-shadow:none}
+.labhead{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+.objective{color:var(--muted)}
+.check{display:flex;gap:9px;align-items:flex-start;margin:9px 0}
+.check input{margin-top:5px}
+.quiz{display:grid;gap:12px}
+.q{padding:15px;border:1px solid var(--line);border-radius:14px;background:var(--panel2)}
+.q button{margin:5px 5px 0 0}
+.answer{margin-top:8px;font-weight:700;min-height:24px}
+.footer{color:var(--muted);font-size:.9rem;padding:0 0 40px}
+.search{width:min(340px,35vw);background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:10px;padding:8px 10px}
+.highlight{outline:2px solid var(--accent);outline-offset:4px}
+@media(max-width:900px){
+  .hero-grid,.grid2,.grid3{grid-template-columns:1fr}
+  .search{display:none}
+  h1{font-size:2.5rem}
+}
+@media print{
+  .controls,.copy,.quiz button{display:none!important}
+  body{background:white;color:#111}
+  .card,.section,.mini,.lab,details{box-shadow:none;background:white;color:#111;border-color:#bbb}
+  pre{white-space:pre-wrap}
+}
+
+/* v1.1 Field Manual enhancements */
+.ref-strip{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin:18px 0}.ref-stat{padding:12px;border:1px solid var(--line);border-radius:14px;background:var(--panel2);text-align:center}.ref-stat b{display:block;color:var(--accent);font-size:1.3rem}.matrix td:first-child{font-weight:800}.errcode{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--warn)}.varbar{display:grid;grid-template-columns:repeat(5,minmax(120px,1fr));gap:10px;margin:14px 0}.varbar label{font-size:.75rem;color:var(--muted);font-weight:800;text-transform:uppercase;letter-spacing:.06em}.varbar input{width:100%;margin-top:4px;background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:9px;padding:8px}.triage-fab{position:fixed;right:22px;bottom:22px;z-index:60;border:none;border-radius:999px;padding:13px 17px;background:var(--bad);color:white;font-weight:900;box-shadow:var(--shadow)}.triage-drawer{position:fixed;right:18px;bottom:78px;width:min(620px,94vw);max-height:78vh;overflow:auto;z-index:59;padding:18px;background:var(--panel);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);display:none}.triage-drawer.open{display:block;animation:fade .18s ease}.drawer-head{display:flex;justify-content:space-between;gap:12px;align-items:center;position:sticky;top:-18px;background:var(--panel);padding:14px 0 10px;z-index:2}.quickgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.quickcmd{padding:11px;border:1px solid var(--line);border-radius:12px;background:var(--panel2)}.quickcmd button{width:100%;text-align:left}.incident{border-left:5px solid var(--violet)}.modebar{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}.modebar button.active{border-color:var(--accent);color:var(--accent)}body.quick .deep,body.quick .learning{display:none!important}body.learn .deep{display:none!important}body.deepmode .deep{display:block}.ref-anchor{scroll-margin-top:78px}.expected{background:color-mix(in srgb,var(--good) 7%,var(--panel2));border-left:4px solid var(--good);padding:10px 12px;border-radius:10px;margin:8px 0}.badout{background:color-mix(in srgb,var(--bad) 7%,var(--panel2));border-left:4px solid var(--bad);padding:10px 12px;border-radius:10px;margin:8px 0}@media(max-width:900px){.ref-strip,.varbar,.quickgrid{grid-template-columns:1fr 1fr}}@media(max-width:560px){.ref-strip,.varbar,.quickgrid{grid-template-columns:1fr}}
+
+
+/* v1.2 production-operations enhancements */
+.ops-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:16px 0}
+.ops-card{padding:16px;border:1px solid var(--line);border-radius:15px;background:var(--panel2)}
+.ops-card b{color:var(--accent)}
+.signal{display:inline-block;padding:3px 8px;border-radius:999px;font-size:.76rem;font-weight:800;border:1px solid var(--line)}
+.signal.red{background:color-mix(in srgb,var(--bad) 10%,var(--panel))}
+.signal.yellow{background:color-mix(in srgb,var(--warn) 10%,var(--panel))}
+.signal.green{background:color-mix(in srgb,var(--good) 10%,var(--panel))}
+.runbook{border-left:5px solid var(--accent2)}
+.printsheet{border:2px dashed var(--line);border-radius:18px;padding:20px;background:var(--panel2)}
+.printcols{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.printcols h4{margin:.2rem 0 .45rem;color:var(--accent)}
+.printcols ul{margin:.3rem 0 1rem;padding-left:20px}
+.diag-badge{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.8rem;background:var(--chip);border:1px solid var(--line);padding:3px 7px;border-radius:8px}
+@media(max-width:900px){.ops-grid,.printcols{grid-template-columns:1fr 1fr}}
+@media(max-width:560px){.ops-grid,.printcols{grid-template-columns:1fr}}
+@media print{
+  body.print-cheat main > *:not(#cheatsheet){display:none!important}
+  body.print-cheat #cheatsheet{display:block!important;border:none!important;box-shadow:none!important}
+  body.print-cheat .controls,body.print-cheat .triage-fab,body.print-cheat .triage-drawer{display:none!important}
+}
+
+</style>
+</head>
+<body>
+<header class="hero">
+  <div class="wrap hero-grid">
+    <div class="card">
+      <div class="eyebrow">Kubernetes Operations Field Guide · Module 7</div>
+      <h1>Troubleshooting &<br>Best Practices</h1>
+      <p class="hero-note">A self-study troubleshooting reference for trainees who already understand Kubernetes objects, Linux basics, and networking fundamentals. The goal is to turn symptoms into evidence, and evidence into a narrow, testable hypothesis.</p>
+      <div class="badge-row">
+        <span class="badge">Pending Pods</span><span class="badge">Networking</span><span class="badge">Storage</span>
+        <span class="badge">Scheduling</span><span class="badge">Events</span><span class="badge">kubectl debug</span>
+      </div>
+    </div>
+    <div class="card">
+      <div class="kicker">Series continuity</div>
+      <h2>From traffic flow to failure isolation</h2>
+      <p><b>Earlier:</b> ingress traffic management focused on how external traffic reaches Services and Pods.</p>
+      <p><b>This module:</b> when the expected flow breaks, you will isolate whether the failure is in scheduling, workload startup, networking, or storage.</p>
+      <p><b>Next:</b> build operational hardening around observability, alerting, recovery, and repeatable incident response.</p>
+      <div class="callout good"><b>Outcome:</b> you should be able to move from “the Pod is not working” to a precise technical diagnosis with supporting evidence.</div>
+    </div>
+  </div>
+</header>
+
+<div class="controls">
+  <div class="wrap">
+    <nav class="nav">
+      <a href="#quickref">Quick Ref</a><a href="#method">Method</a><a href="#states">Pod States</a><a href="#pending">Pending</a><a href="#network">Networking</a>
+      <a href="#storage">Storage</a><a href="#scheduling">Scheduling</a><a href="#nodes">Nodes</a><a href="#probes">Probes</a><a href="#rbac">RBAC</a><a href="#termination">Terminating</a><a href="#cilium">Cilium</a><a href="#csi">CSI</a><a href="#events">Error Lookup</a><a href="#scenarios">Scenarios</a><a href="#labs">Labs</a><a href="#cheatsheet">Cheat Sheet</a><a href="#best">Best Practices</a>
+    </nav>
+    <div style="display:flex;gap:8px">
+      <input id="search" class="search" placeholder="Find: FailedScheduling, PVC, DNS…">
+      <button id="theme" aria-label="Toggle theme">☀ / ☾</button>
+    </div>
+  </div>
+</div>
+
+<main class="wrap">
+
+
+<section class="section ref-anchor" id="quickref">
+<div class="kicker">Field Manual · Start here during an incident</div><h2>Symptom → Evidence → Interpretation</h2>
+<p class="learning">Use this table before diving into a long troubleshooting path. It maps what you see to the next evidence source and reduces random command execution.</p>
+<div class="modebar"><b style="align-self:center">View:</b><button class="modebtn" data-mode="quick">Quick Reference</button><button class="modebtn active" data-mode="learn">Learning</button><button class="modebtn" data-mode="deepmode">Deep Dive</button></div>
+<div class="varbar"><div><label>Namespace<input id="vNS" value="default"></label></div><div><label>Pod<input id="vPOD" value="my-pod"></label></div><div><label>Node<input id="vNODE" value="worker-1"></label></div><div><label>Service<input id="vSVC" value="my-service"></label></div><div><label>PVC<input id="vPVC" value="my-pvc"></label></div></div>
+<div class="callout info">Set the values once. The floating <b>Quick Triage</b> console generates ready-to-copy commands from them.</div>
+<table class="matrix"><tr><th>Symptom</th><th>First evidence</th><th>What it separates</th><th>Next branch</th></tr>
+<tr><td>Pod Pending</td><td><code>describe pod</code> + Events</td><td>Scheduler vs startup/storage</td><td>FailedScheduling → placement; node assigned → kubelet/runtime/storage</td></tr>
+<tr><td>CrashLoopBackOff</td><td>previous logs + container state</td><td>App crash, config, probe, OOM, dependency</td><td>Last State, exit code, restart count</td></tr>
+<tr><td>ImagePullBackOff</td><td>Pod Events</td><td>Name/tag vs registry auth/network</td><td>Image and imagePullSecrets</td></tr>
+<tr><td>ContainerCreating</td><td>Pod Events</td><td>Image, CNI sandbox, Secret/ConfigMap, volume</td><td>Follow latest Warning reason</td></tr>
+<tr><td>Service unreachable</td><td>DNS → Service → EndpointSlice → Pod</td><td>Name resolution, selection, readiness, app port, policy</td><td>Bypass Service and test backend</td></tr>
+<tr><td>PVC Pending</td><td><code>describe pvc</code></td><td>StorageClass/provisioner/capacity/topology</td><td>StorageClass + CSI provisioner</td></tr>
+<tr><td>FailedMount</td><td>Pod Events + CSI/node evidence</td><td>Binding vs node-side mount/setup</td><td>Kubelet/CSI node plugin</td></tr>
+<tr><td>Node NotReady</td><td><code>describe node</code></td><td>Kubelet/network/runtime/pressure</td><td>Conditions, lease, runtime, node network</td></tr></table>
+<div class="ref-strip"><div class="ref-stat"><b>1</b>Observe</div><div class="ref-stat"><b>2</b>Localize</div><div class="ref-stat"><b>3</b>Hypothesize</div><div class="ref-stat"><b>4</b>Test</div><div class="ref-stat"><b>5</b>Verify</div></div>
+</section>
+
+<section class="section ref-anchor" id="method">
+  <div class="kicker">7.0 · Troubleshooting mindset</div>
+  <h2>Diagnose in layers, not by guessing</h2>
+  <div class="assume"><b>Assumed knowledge:</b> you should already know Pods, Deployments, Services, labels/selectors, namespaces, resource requests/limits, and the basic idea of PersistentVolumeClaims. If any of those terms are unfamiliar, review them before the corresponding section.</div>
+
+  <div class="grid3" style="margin-top:18px">
+    <div class="mini"><strong>1 · Observe</strong><p>Capture current state: Pod phase, node assignment, restart count, readiness, PVC state, Service endpoints.</p></div>
+    <div class="mini"><strong>2 · Read Events</strong><p>Events often expose scheduler rejection, mount failures, image pull errors, probe failures, or node pressure.</p></div>
+    <div class="mini"><strong>3 · Narrow the layer</strong><p>Control plane? scheduler? kubelet? runtime? CNI? DNS? Service? policy? CSI/storage?</p></div>
+  </div>
+
+  <div class="flow" style="margin-top:18px">
+    <svg viewBox="0 0 1100 300" role="img" aria-label="Kubernetes troubleshooting flow">
+      <path class="svg-line" d="M185 85 H325 M475 85 H615 M765 85 H905 M955 125 V215 H790 M615 235 H465 M290 235 H180"/>
+      <rect class="svg-node" x="25" y="45" width="160" height="80" rx="16"/>
+      <text class="svg-text" x="105" y="78" text-anchor="middle">Symptom</text>
+      <text class="svg-sub" x="105" y="103" text-anchor="middle">What is failing?</text>
+      <rect class="svg-node" x="325" y="45" width="150" height="80" rx="16"/>
+      <text class="svg-text" x="400" y="78" text-anchor="middle">State</text>
+      <text class="svg-sub" x="400" y="103" text-anchor="middle">get / describe</text>
+      <rect class="svg-node" x="615" y="45" width="150" height="80" rx="16"/>
+      <text class="svg-text" x="690" y="78" text-anchor="middle">Events</text>
+      <text class="svg-sub" x="690" y="103" text-anchor="middle">reason + message</text>
+      <rect class="svg-node" x="905" y="45" width="160" height="80" rx="16"/>
+      <text class="svg-text" x="985" y="78" text-anchor="middle">Hypothesis</text>
+      <text class="svg-sub" x="985" y="103" text-anchor="middle">one layer at a time</text>
+      <rect class="svg-node" x="790" y="195" width="175" height="80" rx="16"/>
+      <text class="svg-text" x="878" y="228" text-anchor="middle">Targeted test</text>
+      <text class="svg-sub" x="878" y="253" text-anchor="middle">prove / disprove</text>
+      <rect class="svg-node" x="465" y="195" width="150" height="80" rx="16"/>
+      <text class="svg-text" x="540" y="228" text-anchor="middle">Fix cause</text>
+      <text class="svg-sub" x="540" y="253" text-anchor="middle">not the symptom</text>
+      <rect class="svg-node" x="130" y="195" width="160" height="80" rx="16"/>
+      <text class="svg-text" x="210" y="228" text-anchor="middle">Verify</text>
+      <text class="svg-sub" x="210" y="253" text-anchor="middle">state + traffic + logs</text>
+    </svg>
+  </div>
+
+  <div class="grid2" style="margin-top:18px">
+    <div>
+      <div class="cmd-title">Start every Pod incident here</div>
+      <div class="codewrap"><button class="copy">Copy</button><pre>kubectl get pod -A -o wide
+kubectl describe pod &lt;pod&gt; -n &lt;namespace&gt;
+kubectl get events -n &lt;namespace&gt; --sort-by=.lastTimestamp</pre></div>
+    </div>
+    <div>
+      <div class="cmd-title">Cluster-level sanity check</div>
+      <div class="codewrap"><button class="copy">Copy</button><pre>kubectl get nodes -o wide
+kubectl get --raw='/readyz?verbose'
+kubectl get events -A --sort-by=.lastTimestamp</pre></div>
+    </div>
+  </div>
+  <div class="callout warn"><b>Best practice:</b> collect evidence before deleting or restarting the Pod. A restart can remove the most useful evidence and turn a deterministic problem into an intermittent one.</div>
+</section>
+
+
+<section class="section ref-anchor" id="states"><div class="kicker">Field Manual · Pod & container state decoder</div><h2>Pod phase is not the same as container waiting reason</h2>
+<p class="learning">A Pod can have phase <code>Running</code> while a container is repeatedly failing. The STATUS column is often a human-friendly summary derived from container state.</p>
+<table><tr><th>Status / reason</th><th>Meaning</th><th>Fastest evidence</th></tr>
+<tr><td class="errcode">CrashLoopBackOff</td><td>Container repeatedly exits; restarts are being delayed.</td><td><code>logs --previous</code>, Last State, exit code, probes, OOM</td></tr>
+<tr><td class="errcode">ImagePullBackOff</td><td>Image pull failed and retries are backing off.</td><td>Events, image/tag, registry response, imagePullSecrets</td></tr>
+<tr><td class="errcode">ErrImagePull</td><td>An image retrieval attempt failed.</td><td>Exact registry error in Events</td></tr>
+<tr><td class="errcode">CreateContainerConfigError</td><td>Container configuration cannot be assembled.</td><td>Secret/ConfigMap/key references in Events</td></tr>
+<tr><td class="errcode">ContainerCreating</td><td>Container setup is in progress.</td><td>Events: sandbox/CNI, image, Secret, volume, runtime</td></tr>
+<tr><td class="errcode">OOMKilled</td><td>Container was terminated due to memory constraints.</td><td>Last State, limits, node pressure, memory behavior</td></tr>
+<tr><td class="errcode">Init:N/M</td><td>N of M init containers completed.</td><td>Init container status and logs</td></tr></table>
+<div class="grid2"><div><div class="cmd-title">Crash / restart diagnosis</div><div class="codewrap"><button class="copy">Copy</button><pre>kubectl describe pod &lt;pod&gt; -n &lt;ns&gt;
+kubectl logs &lt;pod&gt; -n &lt;ns&gt; --all-containers=true
+kubectl logs &lt;pod&gt; -n &lt;ns&gt; --all-containers=true --previous
+kubectl get pod &lt;pod&gt; -n &lt;ns&gt; -o jsonpath='{range .status.containerStatuses[*]}{.name}{" reason="}{.state.waiting.reason}{" last="}{.lastState.terminated.reason}{" exit="}{.lastState.terminated.exitCode}{" restarts="}{.restartCount}{"\n"}{end}'</pre></div></div>
+<div><div class="cmd-title">Image/config diagnosis</div><div class="codewrap"><button class="copy">Copy</button><pre>kubectl get pod &lt;pod&gt; -n &lt;ns&gt; -o jsonpath='{.spec.containers[*].image}{"\n"}'
+kubectl get pod &lt;pod&gt; -n &lt;ns&gt; -o jsonpath='{.spec.imagePullSecrets[*].name}{"\n"}'
+kubectl get events -n &lt;ns&gt; --sort-by=.lastTimestamp</pre></div></div></div>
+<div class="expected"><b>Good interpretation:</b> “Container exits with code 1; previous logs show a missing configuration file. This is an application/configuration failure, not a scheduler problem.”</div>
+<div class="badout"><b>Poor interpretation:</b> “Pod is CrashLoopBackOff, therefore Kubernetes is broken.” The status describes a symptom, not the root cause.</div></section>
+
+<section class="section ref-anchor" id="pending">
+  <div class="kicker">7.1 · Debugging Pending Pods</div>
+  <h2>“Pending” is a phase, not a root cause</h2>
+  <p>A Pending Pod has been accepted by the API server but one or more containers are not yet running. Often it has not been scheduled, but a Pod can also remain Pending while images are being prepared or other startup prerequisites are unresolved. The scheduler’s Events are the fastest way to distinguish these situations.</p>
+
+  <div class="tabs" data-tabs="pending">
+    <button class="tabbtn active" data-tab="p-triage">Triage</button>
+    <button class="tabbtn" data-tab="p-causes">Common causes</button>
+    <button class="tabbtn" data-tab="p-evidence">Evidence map</button>
+  </div>
+  <div id="p-triage" class="tabpanel active">
+    <ol class="steps">
+      <li>Check whether <code>NODE</code> is empty. If empty, think scheduler. If a node is assigned, shift focus toward kubelet/runtime/image/storage startup.</li>
+      <li>Read the Events section of <code>kubectl describe pod</code>. Look for <span class="pill red">FailedScheduling</span>, <span class="pill yellow">FailedMount</span>, <span class="pill yellow">FailedAttachVolume</span>, or image errors.</li>
+      <li>For scheduling failures, compare Pod constraints against actual node labels, taints, allocatable CPU/memory, affinity, topology, and volume constraints.</li>
+      <li>Change only the constraint you have proven is responsible, then verify scheduling and startup separately.</li>
+    </ol>
+  </div>
+  <div id="p-causes" class="tabpanel">
+    <table>
+      <tr><th>Symptom / Event</th><th>Likely domain</th><th>High-value check</th></tr>
+      <tr><td>Insufficient cpu / memory</td><td>Resource fit</td><td><code>kubectl describe node</code>, Pod requests</td></tr>
+      <tr><td>didn't match Pod's node affinity/selector</td><td>Placement constraint</td><td>Node labels + Pod selector/affinity</td></tr>
+      <tr><td>untolerated taint</td><td>Taints/tolerations</td><td><code>kubectl describe node</code></td></tr>
+      <tr><td>unbound immediate PersistentVolumeClaims</td><td>Storage binding</td><td>PVC + StorageClass + provisioner Events</td></tr>
+      <tr><td>pod has unbound immediate PersistentVolumeClaims</td><td>Storage/scheduling coupling</td><td>Binding mode, PVC status, CSI provisioner</td></tr>
+      <tr><td>node(s) had volume node affinity conflict</td><td>Topology/storage</td><td>PV nodeAffinity and target node topology</td></tr>
+      <tr><td>SchedulingGated</td><td>Scheduling readiness</td><td><code>.spec.schedulingGates</code></td></tr>
+    </table>
+  </div>
+  <div id="p-evidence" class="tabpanel">
+    <div class="grid2">
+      <div>
+        <div class="cmd-title">Compact Pending report</div>
+        <div class="codewrap"><button class="copy">Copy</button><pre>POD=&lt;pod&gt;
+NS=&lt;namespace&gt;
+
+kubectl get pod "$POD" -n "$NS" -o wide
+kubectl get pod "$POD" -n "$NS" \
+  -o jsonpath='{.status.phase}{" node="}{.spec.nodeName}{"\n"}'
+kubectl describe pod "$POD" -n "$NS"</pre></div>
+      </div>
+      <div>
+        <div class="cmd-title">Inspect constraints</div>
+        <div class="codewrap"><button class="copy">Copy</button><pre>kubectl get pod "$POD" -n "$NS" -o yaml
+kubectl get nodes --show-labels
+kubectl describe nodes | less
+# Requires the Metrics API (commonly Metrics Server)
+kubectl top nodes
+kubectl top pods -A</pre></div>
+      </div>
+    </div>
+  </div>
+  <details><summary>Why <code>kubectl top</code> does not directly explain scheduling</summary>
+    Scheduler fit is based primarily on resource <b>requests</b> versus node allocatable capacity, not on instantaneous CPU/memory usage. <code>kubectl top</code> is still useful operational evidence, but it should not replace inspection of requests and allocatable resources.
+  </details>
+</section>
+
+<section class="section ref-anchor" id="network">
+  <div class="kicker">7.2 · Networking Issue Diagnosis</div>
+  <h2>Test the path in layers</h2>
+  <div class="assume"><b>Assumed knowledge:</b> Services, selectors, EndpointSlices/endpoints, DNS names, CNI basics, and NetworkPolicy concepts. If NetworkPolicy was not yet covered in your sequence, treat policy checks below as an advanced dependency.</div>
+
+  <p>A network symptom such as “connection refused” or “timeout” is not enough to identify the failing component. Test from the same network context as the application and progressively narrow the path: DNS → Service VIP/name → endpoints → Pod IP → application port → policy/CNI/node path.</p>
+
+  <div class="flow">
+    <svg viewBox="0 0 1150 265" role="img" aria-label="Network troubleshooting path">
+      <path class="svg-line" d="M180 132 H275 M425 132 H520 M670 132 H765 M915 132 H1010"/>
+      <rect class="svg-node" x="20" y="92" width="160" height="80" rx="16"/>
+      <text class="svg-text" x="100" y="123" text-anchor="middle">Client Pod</text><text class="svg-sub" x="100" y="149" text-anchor="middle">same namespace/context</text>
+      <rect class="svg-node" x="275" y="92" width="150" height="80" rx="16"/>
+      <text class="svg-text" x="350" y="123" text-anchor="middle">DNS</text><text class="svg-sub" x="350" y="149" text-anchor="middle">name → IP</text>
+      <rect class="svg-node" x="520" y="92" width="150" height="80" rx="16"/>
+      <text class="svg-text" x="595" y="123" text-anchor="middle">Service</text><text class="svg-sub" x="595" y="149" text-anchor="middle">selector + port</text>
+      <rect class="svg-node" x="765" y="92" width="150" height="80" rx="16"/>
+      <text class="svg-text" x="840" y="123" text-anchor="middle">Endpoints</text><text class="svg-sub" x="840" y="149" text-anchor="middle">ready backends?</text>
+      <rect class="svg-node" x="1010" y="92" width="120" height="80" rx="16"/>
+      <text class="svg-text" x="1070" y="123" text-anchor="middle">Pod</text><text class="svg-sub" x="1070" y="149" text-anchor="middle">app listens?</text>
+    </svg>
+  </div>
+
+  <div class="grid2" style="margin-top:18px">
+    <div class="mini">
+      <h3>DNS succeeds, Service fails</h3>
+      <p>Inspect Service ports/targetPorts and EndpointSlices. If there are no ready endpoints, inspect selectors and Pod readiness.</p>
+    </div>
+    <div class="mini">
+      <h3>Pod IP works, Service IP fails</h3>
+      <p>Focus on Service plumbing and node networking: kube-proxy replacement, eBPF dataplane, service rules, or the CNI implementation.</p>
+    </div>
+    <div class="mini">
+      <h3>Service works in one namespace only</h3>
+      <p>Check NetworkPolicy, namespace selectors, DNS search suffix assumptions, and whether the caller uses the correct FQDN.</p>
+    </div>
+    <div class="mini">
+      <h3>Timeout vs refused</h3>
+      <p><b>Refused</b> often means the destination is reachable but nothing accepts that port. <b>Timeout</b> more often suggests filtering, routing, policy, or an unreachable endpoint.</p>
+    </div>
+  </div>
+
+  <div class="cmd-title">Create a temporary troubleshooting Pod</div>
+  <div class="codewrap"><button class="copy">Copy</button><pre>kubectl run net-debug \
+  --image=registry.k8s.io/e2e-test-images/agnhost:2.53 \
+  --restart=Never -it --rm -- sh</pre></div>
+
+  <div class="cmd-title">Service and endpoint checks</div>
+  <div class="codewrap"><button class="copy">Copy</button><pre>NS=&lt;namespace&gt;
+SVC=&lt;service&gt;
+
+kubectl get svc "$SVC" -n "$NS" -o wide
+kubectl describe svc "$SVC" -n "$NS"
+kubectl get endpointslices -n "$NS" \
+  -l kubernetes.io/service-name="$SVC" -o wide
+kubectl get pods -n "$NS" --show-labels</pre></div>
+
+  <div class="cmd-title">DNS checks from inside a Pod</div>
+  <div class="codewrap"><button class="copy">Copy</button><pre>nslookup &lt;service&gt;
+nslookup &lt;service&gt;.&lt;namespace&gt;.svc.cluster.local
+cat /etc/resolv.conf</pre></div>
+
+  <div class="cmd-title">When the application image has no shell or tools</div>
+  <div class="codewrap"><button class="copy">Copy</button><pre>kubectl debug -it pod/&lt;pod&gt; -n &lt;namespace&gt; \
+  --image=busybox:1.36 --target=&lt;container&gt;</pre></div>
+
+<details class="deep"><summary>Deep dive · packet-path debugger</summary><table><tr><th>Layer</th><th>Question</th><th>Evidence</th></tr><tr><td>Application</td><td>Is the process listening on the expected interface/port?</td><td><code>ss -lntp</code>, debug container, app logs</td></tr><tr><td>Pod</td><td>Can another Pod reach the backend Pod IP and port?</td><td><code>wget</code>/<code>curl</code>/<code>nc</code></td></tr><tr><td>Service selection</td><td>Does the selector produce ready endpoints?</td><td>Service selector + EndpointSlice</td></tr><tr><td>Service dataplane</td><td>Does Service traffic reach a backend?</td><td>Direct-Pod succeeds while Service fails</td></tr><tr><td>Policy</td><td>Is traffic intentionally denied?</td><td>NetworkPolicy + CNI diagnostics</td></tr><tr><td>Node/CNI</td><td>Is cross-node Pod traffic healthy?</td><td>CNI health, routes/eBPF/overlay, node connectivity</td></tr></table></details>
+  <div class="callout info"><b>CNI-aware troubleshooting:</b> after Kubernetes object checks pass, use your CNI’s own health/status commands. Do not assume Calico, Cilium, Flannel, or another implementation exposes the same dataplane or diagnostics.</div>
+</section>
+
+<section class="section ref-anchor" id="storage">
+  <div class="kicker">7.3 · Storage Mount Failures</div>
+  <h2>Separate binding, attachment, and mount</h2>
+  <div class="assume"><b>Assumed knowledge:</b> PersistentVolume, PersistentVolumeClaim, StorageClass, access modes, CSI, and dynamic provisioning. If CSI has not been covered, note that provisioning/attach/mount failures may involve controller-side and node-side CSI components.</div>
+
+  <div class="grid3">
+    <div class="mini"><strong>Binding</strong><p>PVC must match or trigger provisioning of a suitable PV. Evidence lives on PVC, PV, StorageClass, and provisioner Events.</p></div>
+    <div class="mini"><strong>Attachment</strong><p>For attachable storage, the volume must be attached to the selected node. Cloud/storage API and CSI controller failures appear here.</p></div>
+    <div class="mini"><strong>Mount</strong><p>Kubelet/CSI node plugin must mount the volume into the Pod. Filesystem, permissions, missing helper, path, or node plugin issues surface here.</p></div>
+  </div>
+
+  <table>
+    <tr><th>Event / State</th><th>Interpretation</th><th>First checks</th></tr>
+    <tr><td>PVC <span class="pill yellow">Pending</span></td><td>No matching/provisioned PV yet</td><td>StorageClass, provisioner, capacity, binding mode, topology</td></tr>
+    <tr><td>FailedAttachVolume</td><td>Volume could not attach to node</td><td>CSI controller, cloud/storage API, multi-attach rules, node identity</td></tr>
+    <tr><td>FailedMount</td><td>Node-side mount/setup failed</td><td>Pod Events, kubelet, CSI node plugin, filesystem/path/secret</td></tr>
+    <tr><td>volume node affinity conflict</td><td>Selected node conflicts with volume topology</td><td>PV nodeAffinity, StorageClass topology, scheduler placement</td></tr>
+    <tr><td>Multi-Attach error</td><td>Access mode / attach semantics conflict</td><td>Existing attachment, workload replicas, storage capabilities</td></tr>
+  </table>
+
+  <div class="grid2">
+    <div>
+      <div class="cmd-title">PVC/PV evidence</div>
+      <div class="codewrap"><button class="copy">Copy</button><pre>kubectl get pvc -A
+kubectl describe pvc &lt;pvc&gt; -n &lt;namespace&gt;
+kubectl get pv
+kubectl describe pv &lt;pv&gt;
+kubectl get storageclass
+kubectl describe storageclass &lt;class&gt;</pre></div>
+    </div>
+    <div>
+      <div class="cmd-title">Pod-side evidence</div>
+      <div class="codewrap"><button class="copy">Copy</button><pre>kubectl describe pod &lt;pod&gt; -n &lt;namespace&gt;
+kubectl get pod &lt;pod&gt; -n &lt;namespace&gt; -o yaml
+kubectl get events -n &lt;namespace&gt; --sort-by=.lastTimestamp
+
+# CSI components vary by driver:
+kubectl get pods -A | grep -i csi</pre></div>
+    </div>
+  </div>
+
+<details class="deep"><summary>Deep dive · follow the complete storage path</summary><p><b>Pod → PVC → StorageClass → CSI provisioner/controller → PV → topology → attach → CSI node plugin → filesystem mount → container mountPath</b></p><table><tr><th>Failure boundary</th><th>Typical evidence</th></tr><tr><td>PVC/StorageClass</td><td>PVC Pending, no provisioner, wrong class, capacity issue</td></tr><tr><td>Provisioning/topology</td><td>Provisioning failure, allowedTopologies mismatch, volume node affinity conflict</td></tr><tr><td>Attach</td><td>FailedAttachVolume, multi-attach restriction, provider API failure</td></tr><tr><td>Node stage/publish</td><td>FailedMount, CSI node/kubelet errors, missing filesystem helper/secret</td></tr><tr><td>Container</td><td>Permissions, ownership, read-only behavior, wrong mountPath/subPath</td></tr></table></details>
+  <details><summary>Why <code>WaitForFirstConsumer</code> can prevent topology mistakes</summary>
+    With topology-constrained storage, delaying binding/provisioning until the scheduler has workload placement information helps align the volume with a node/zone where the Pod can actually run. This avoids provisioning a volume in a topology that later conflicts with scheduling.
+  </details>
+  <details><summary>HostPath warning</summary>
+    <code>hostPath</code> is node-local and couples the Pod to a node’s filesystem. It is useful for controlled labs and some node-level workloads, but should not be treated as a portable persistent-storage design for general applications.
+  </details>
+</section>
+
+<section class="section ref-anchor" id="scheduling">
+  <div class="kicker">7.4 · Scheduling Conflicts</div>
+  <h2>Think in filters: which requirement rejects every node?</h2>
+  <p>The scheduler needs at least one feasible node. A scheduling conflict occurs when every node fails one or more placement requirements. The key is to read the scheduler’s rejection message and map it back to the Pod specification.</p>
+
+  <div class="grid3">
+    <div class="mini"><strong>Resources</strong><p>CPU, memory, hugepages, extended resources, Pod count capacity.</p></div>
+    <div class="mini"><strong>Placement</strong><p>nodeSelector, node affinity, pod affinity/anti-affinity, topology spread.</p></div>
+    <div class="mini"><strong>Node conditions</strong><p>Taints, unschedulable nodes, pressure conditions, node readiness.</p></div>
+    <div class="mini"><strong>Ports</strong><p>hostPort can restrict placement when the requested node/port combination is already occupied.</p></div>
+    <div class="mini"><strong>Storage</strong><p>PVC binding, PV node affinity, allowed topology, attach limits.</p></div>
+    <div class="mini"><strong>Scheduling gates</strong><p>A Pod may intentionally remain gated until external prerequisites are satisfied.</p></div>
+  </div>
+
+  <div class="cmd-title">Compare Pod requirements with node reality</div>
+  <div class="codewrap"><button class="copy">Copy</button><pre>POD=&lt;pod&gt;
+NS=&lt;namespace&gt;
+
+kubectl describe pod "$POD" -n "$NS"
+kubectl get pod "$POD" -n "$NS" -o yaml
+kubectl get nodes -o wide
+kubectl get nodes --show-labels
+kubectl describe node &lt;node&gt;
+kubectl get pod "$POD" -n "$NS" \
+  -o jsonpath='{.spec.schedulingGates}{"\n"}'</pre></div>
+
+  <div class="callout warn"><b>Do not “fix” scheduling by blindly removing all requests, affinity, taints, or topology rules.</b> Those constraints may encode availability, security, licensing, hardware, or failure-domain requirements. Diagnose the exact conflict first.</div>
+</section>
+
+<section class="section ref-anchor" id="scenarios"><div class="kicker">Scenario-based incident practice</div><h2>Diagnose the chain, not a pre-labeled fault</h2>
+<article class="lab incident"><h3>Incident 1 — “The API is timing out”</h3><p><b>Initial report:</b> users receive timeouts calling an internal API. Pods are Running.</p><ol class="steps"><li>Confirm Service resolves and exists.</li><li>EndpointSlices show no ready addresses.</li><li>Service selector and Pod labels match.</li><li>Pod readiness is failing on port 8080.</li><li>Application is listening on 8081.</li></ol><details><summary>Diagnosis</summary><p>The wrong readiness port keeps Pods out of ready Service backends. Correct the probe after confirming 8081 is intentional, then verify Ready state, EndpointSlice population, and traffic.</p></details></article>
+<article class="lab incident"><h3>Incident 2 — “Deployment stuck after storage change”</h3><ol class="steps"><li>Pod Event reports volume node affinity conflict.</li><li>PV is restricted to one topology.</li><li>Pod required node affinity only permits another topology.</li><li>Deleting the Pod cannot satisfy both constraints.</li></ol><details><summary>Diagnosis</summary><p>This is a scheduling/storage topology conflict. Align workload placement and storage topology without compromising data safety.</p></details></article>
+<article class="lab incident"><h3>Incident 3 — “Pod keeps restarting after release”</h3><ol class="steps"><li>Read previous logs.</li><li>Check Last State and exit code.</li><li>Logs report a missing configuration key.</li><li>Compare ConfigMap/Secret references with the previous release.</li></ol><details><summary>Diagnosis</summary><p>CrashLoopBackOff is secondary; invalid runtime configuration is the root cause. Correct or roll back configuration and verify stable readiness.</p></details></article></section>
+
+<section class="section ref-anchor" id="nodes">
+  <div class="kicker">7.5 · Node health & pressure</div>
+  <h2>When the Pod problem is actually a node problem</h2>
+  <p class="learning">A node can be reachable from the API yet still be unsuitable for workloads. Distinguish <b>Ready/NotReady</b> from pressure conditions such as <code>MemoryPressure</code>, <code>DiskPressure</code>, and <code>PIDPressure</code>.</p>
+
+  <div class="ops-grid">
+    <div class="ops-card"><b>NotReady</b><p>Investigate kubelet heartbeat/lease, runtime, node networking, and host health.</p></div>
+    <div class="ops-card"><b>MemoryPressure</b><p>Kubelet has crossed a memory eviction threshold; workloads may be evicted.</p></div>
+    <div class="ops-card"><b>DiskPressure</b><p>Node filesystem/image filesystem space or inode pressure is present.</p></div>
+    <div class="ops-card"><b>PIDPressure</b><p>Available process IDs have crossed the configured pressure threshold.</p></div>
+  </div>
+
+  <div class="grid2">
+    <div>
+      <div class="cmd-title">Node triage</div>
+      <div class="codewrap"><button class="copy">Copy</button><pre>kubectl get nodes -o wide
+kubectl describe node &lt;node&gt;
+kubectl get node &lt;node&gt; \
+  -o jsonpath='{range .status.conditions[*]}{.type}{"="}{.status}{" reason="}{.reason}{"\n"}{end}'
+kubectl get pods -A --field-selector spec.nodeName=&lt;node&gt; -o wide</pre></div>
+    </div>
+    <div>
+      <div class="cmd-title">Node-level debug session</div>
+      <div class="codewrap"><button class="copy">Copy</button><pre>kubectl debug node/&lt;node&gt; -it \
+  --image=ubuntu:24.04 --profile=sysadmin
+
+# The node filesystem is mounted under /host.
+# Inspect host logs directly (paths vary by distribution).
+ls -lah /host/var/log
+tail -n 200 /host/var/log/syslog 2&gt;/dev/null || true
+tail -n 200 /host/var/log/messages 2&gt;/dev/null || true
+tail -n 200 /host/var/log/kubelet.log 2&gt;/dev/null || true
+
+# If the host stores a persistent systemd journal:
+chroot /host journalctl -u kubelet --since "30 min ago" --no-pager</pre></div>
+    </div>
+  </div>
+  <div class="callout info"><b>Node-debug limitation:</b> <code>kubectl debug node/&lt;node&gt;</code> schedules a debugging Pod onto that node. It cannot troubleshoot a node that is fully down, disconnected, or whose kubelet cannot run the debugging Pod; use out-of-band/host access in that case.</div>
+  <div class="callout warn"><b>Important:</b> pressure-driven evictions are kubelet decisions. Do not diagnose them solely from current usage; inspect node Conditions, Events, requests, priority, and the workload's recent history.</div>
+</section>
+
+<section class="section ref-anchor" id="probes">
+  <div class="kicker">7.6 · Probe failure diagnosis</div>
+  <h2>Readiness, liveness, and startup failures are different incidents</h2>
+  <table>
+    <tr><th>Probe</th><th>What failure changes</th><th>Typical symptom</th></tr>
+    <tr><td>Readiness</td><td>Pod is removed from Service-ready backends</td><td>Pod Running but traffic not routed to it</td></tr>
+    <tr><td>Liveness</td><td>Kubelet restarts the container after threshold is exceeded</td><td>Restarts / CrashLoop-like operational symptom</td></tr>
+    <tr><td>Startup</td><td>Protects slow-starting container from liveness/readiness until startup succeeds</td><td>Startup never completes or thresholds are too strict</td></tr>
+  </table>
+
+  <div class="codewrap"><button class="copy">Copy</button><pre>kubectl describe pod &lt;pod&gt; -n &lt;ns&gt;
+kubectl get pod &lt;pod&gt; -n &lt;ns&gt; -o yaml
+kubectl logs &lt;pod&gt; -n &lt;ns&gt; --all-containers=true
+kubectl get endpointslices -n &lt;ns&gt; \
+  -l kubernetes.io/service-name=&lt;svc&gt; -o wide</pre></div>
+
+  <div class="grid2">
+    <div class="expected"><b>Readiness diagnosis:</b> endpoint disappears, but container may stay Running. Validate probe path/port/headers, dependency health, and application readiness semantics.</div>
+    <div class="badout"><b>Liveness anti-pattern:</b> pointing liveness at a fragile downstream dependency can turn a dependency outage into mass container restarts.</div>
+  </div>
+</section>
+
+<section class="section ref-anchor" id="rbac">
+  <div class="kicker">7.7 · RBAC & ServiceAccount failures</div>
+  <h2>“Forbidden” is usually an authorization clue, not a networking clue</h2>
+  <p class="learning">When an in-cluster client receives HTTP 403 / <code>forbidden</code>, establish the identity first, then ask Kubernetes whether that identity is authorized for the exact verb, resource, namespace, and API group.</p>
+
+  <div class="codewrap"><button class="copy">Copy</button><pre># Which ServiceAccount does the Pod use?
+kubectl get pod &lt;pod&gt; -n &lt;ns&gt; \
+  -o jsonpath='{.spec.serviceAccountName}{"\n"}'
+
+# Test authorization explicitly
+kubectl auth can-i get secrets \
+  --as=system:serviceaccount:&lt;ns&gt;:&lt;serviceaccount&gt; \
+  -n &lt;ns&gt;
+
+kubectl auth can-i --list \
+  --as=system:serviceaccount:&lt;ns&gt;:&lt;serviceaccount&gt; \
+  -n &lt;ns&gt;
+
+kubectl get role,rolebinding,clusterrole,clusterrolebinding -A</pre></div>
+
+  <div class="callout good"><b>Best practice:</b> fix the smallest missing permission. Avoid “temporary” cluster-admin grants that become permanent operational debt.</div>
+  <details class="deep"><summary>Deep dive · identity chain</summary>
+    <p>Pod → ServiceAccount → projected token → API request identity → Role/ClusterRole rules → RoleBinding/ClusterRoleBinding scope. A correct token does not imply authorization.</p>
+  </details>
+</section>
+
+<section class="section ref-anchor" id="termination">
+  <div class="kicker">7.8 · Stuck Terminating resources</div>
+  <h2>Find what is blocking deletion before forcing it</h2>
+  <p>A resource that remains <code>Terminating</code> normally has a deletion timestamp but cleanup has not completed. Common causes include finalizers, unavailable controllers, volume detach/unmount, or a node/kubelet that cannot complete Pod termination.</p>
+
+  <div class="codewrap"><button class="copy">Copy</button><pre>kubectl get pod &lt;pod&gt; -n &lt;ns&gt; -o yaml
+kubectl describe pod &lt;pod&gt; -n &lt;ns&gt;
+
+# Inspect deletion/finalizer fields
+kubectl get pod &lt;pod&gt; -n &lt;ns&gt; \
+  -o jsonpath='{.metadata.deletionTimestamp}{" finalizers="}{.metadata.finalizers}{"\n"}'
+
+# Check the node and volume-related events before forcing deletion
+kubectl get events -n &lt;ns&gt; --sort-by=.lastTimestamp
+kubectl get volumeattachments.storage.k8s.io</pre></div>
+
+  <div class="callout bad"><b>Force deletion is an escalation step, not normal cleanup.</b> It can remove the API object before the underlying process or storage state is actually gone. Understand the finalizer/node/storage consequence first.</div>
+</section>
+
+<section class="section ref-anchor" id="cilium">
+  <div class="kicker">7.9 · Cilium-specific network diagnostics</div>
+  <h2>After Kubernetes objects look correct, validate the dataplane</h2>
+  <div class="assume"><b>Environment-specific section:</b> use this only on clusters running Cilium. Exact command availability depends on whether the Cilium CLI is installed and how the cluster was deployed.</div>
+
+  <div class="grid2">
+    <div>
+      <div class="cmd-title">High-value Cilium checks</div>
+      <div class="codewrap"><button class="copy">Copy</button><pre>cilium status --wait
+cilium connectivity test
+
+kubectl -n kube-system get pods -l k8s-app=cilium -o wide
+kubectl -n kube-system get pods -l k8s-app=cilium-envoy -o wide
+kubectl -n kube-system get events --sort-by=.lastTimestamp</pre></div>
+    </div>
+    <div>
+      <div class="cmd-title">Agent evidence</div>
+      <div class="codewrap"><button class="copy">Copy</button><pre>kubectl -n kube-system logs ds/cilium \
+  --tail=200
+
+kubectl -n kube-system exec ds/cilium -- \
+  cilium-dbg status</pre></div>
+    </div>
+  </div>
+
+  <table>
+    <tr><th>Kubernetes evidence</th><th>Cilium evidence to add</th></tr>
+    <tr><td>Service/EndpointSlice correct, traffic still fails</td><td>Connectivity test, agent status, service/dataplane state</td></tr>
+    <tr><td>NetworkPolicy suspected</td><td>Policy realization and flow visibility tooling available in your deployment</td></tr>
+    <tr><td>Cross-node traffic fails</td><td>Cilium agents, node-to-node path, tunneling/native routing config, firewall path</td></tr>
+    <tr><td>Cilium Envoy restarts</td><td>Inspect Envoy Pod logs/events and determine whether restart is historical or still reproducing</td></tr>
+  </table>
+</section>
+
+<section class="section ref-anchor" id="csi">
+  <div class="kicker">7.10 · CSI driver troubleshooting</div>
+  <h2>Locate whether failure is controller-side or node-side</h2>
+  <div class="ops-grid">
+    <div class="ops-card"><b>Provision</b><p>Controller/provisioner creates or selects the volume.</p></div>
+    <div class="ops-card"><b>Attach</b><p>Controller-side attach if the storage system requires it.</p></div>
+    <div class="ops-card"><b>Stage/Publish</b><p>Node plugin prepares and mounts the volume.</p></div>
+    <div class="ops-card"><b>Application</b><p>Container sees mountPath, permissions, ownership, and filesystem semantics.</p></div>
+  </div>
+
+  <div class="codewrap"><button class="copy">Copy</button><pre>kubectl get csidrivers
+kubectl get csinodes
+kubectl get volumeattachments.storage.k8s.io
+kubectl get pods -A | grep -i csi
+
+kubectl describe pvc &lt;pvc&gt; -n &lt;ns&gt;
+kubectl describe pv &lt;pv&gt;
+kubectl describe pod &lt;pod&gt; -n &lt;ns&gt;
+
+# Then inspect the driver-specific controller/node Pods:
+kubectl logs -n &lt;csi-namespace&gt; &lt;csi-pod&gt; --all-containers --tail=200</pre></div>
+
+  <div class="callout info"><b>Interpretation rule:</b> provisioning errors generally point toward the controller/provisioner path; <code>FailedMount</code> after a node is selected generally moves attention toward kubelet, CSI node plugin, filesystem, credentials, or node-local prerequisites.</div>
+
+  <article class="lab incident">
+    <h3>Incident 4 — “Pods are disappearing from one worker”</h3>
+    <p><b>Evidence chain:</b> node reports <code>DiskPressure=True</code>; kubelet Events show evictions; image/log/data usage has consumed node filesystem capacity.</p>
+    <details><summary>Diagnosis and corrective action</summary><p>Treat this as a node-pressure incident, not an application crash. Identify disk/inode consumers, validate image/log rotation and ephemeral-storage requests/limits, recover capacity safely, then confirm the node condition clears and scheduling behavior normalizes.</p></details>
+  </article>
+
+  <article class="lab incident">
+    <h3>Incident 5 — “Application can reach the API server but gets forbidden”</h3>
+    <p><b>Evidence chain:</b> network connection succeeds; API returns 403; Pod ServiceAccount lacks the requested verb on the resource.</p>
+    <details><summary>Diagnosis and corrective action</summary><p>Use <code>kubectl auth can-i</code> with the Pod ServiceAccount identity, correct the least-privilege Role/Binding, and retest. Do not treat an authorization denial as a CNI failure.</p></details>
+  </article>
+
+</section>
+
+<section class="section ref-anchor" id="events"><div class="kicker">Field Manual · Error / Event Dictionary</div><h2>Translate messages into the next diagnostic action</h2><table><tr><th>Reason/message</th><th>Operational meaning</th><th>Next evidence</th></tr>
+<tr><td class="errcode">FailedScheduling</td><td>No feasible node satisfied all constraints.</td><td>Full scheduler message; requests, taints, affinity, PVC/topology</td></tr><tr><td class="errcode">Insufficient cpu / memory</td><td>Requested resources do not fit eligible nodes.</td><td>Requests + node Allocatable/allocated requests</td></tr><tr><td class="errcode">untolerated taint</td><td>Candidate node has a taint the Pod does not tolerate.</td><td>Node taints + Pod tolerations</td></tr><tr><td class="errcode">didn't match Pod's node affinity/selector</td><td>Placement rules reject candidate nodes.</td><td>Node labels + required affinity/selector</td></tr><tr><td class="errcode">unbound immediate PersistentVolumeClaims</td><td>Scheduling blocked by unresolved PVC binding.</td><td>PVC Events, StorageClass, provisioner</td></tr><tr><td class="errcode">volume node affinity conflict</td><td>Volume topology conflicts with node.</td><td>PV nodeAffinity + zone/node labels</td></tr><tr><td class="errcode">FailedMount</td><td>Node could not prepare/mount volume.</td><td>Pod Events, kubelet, CSI node plugin</td></tr><tr><td class="errcode">FailedAttachVolume</td><td>Volume attach to node failed.</td><td>CSI controller/provider API/attachment state</td></tr><tr><td class="errcode">ErrImagePull</td><td>Current image pull attempt failed.</td><td>Registry error, image/tag, credentials, egress</td></tr><tr><td class="errcode">ImagePullBackOff</td><td>Repeated image pulls are delayed.</td><td>Earlier pull Event + imagePullSecrets</td></tr><tr><td class="errcode">CreateContainerConfigError</td><td>Referenced configuration cannot be assembled.</td><td>Secret/ConfigMap/key/serviceAccount references</td></tr><tr><td class="errcode">BackOff</td><td>Repeated start/restart attempts are delayed.</td><td>Previous logs + terminated state</td></tr><tr><td class="errcode">context deadline exceeded</td><td>An operation timed out; the string alone is not a root cause.</td><td>Identify emitting component, then inspect dependency path</td></tr></table><div class="callout warn"><b>Read the complete Event message.</b> The Reason is categorization; the message often names the exact node, driver, registry, path, constraint, or API failure.</div></section>
+<section class="section ref-anchor" id="labs">
+  <div class="kicker">7.5 · Hands-on labs</div>
+  <h2>Controlled failures you can diagnose safely</h2>
+  <div class="callout info"><b>Lab scope:</b> use a dedicated training cluster. Commands create and delete namespace-scoped resources. Do not run disruption-oriented variants on shared production clusters. The cluster nodes must also be able to pull the example container images from their referenced registries, or you should substitute equivalent images from your approved internal registry.</div>
+
+  <article class="lab">
+    <div class="labhead"><div><h3>Lab A — Pending Pod: impossible nodeSelector</h3><p class="objective">Objective: prove that scheduler Events identify a label mismatch.</p></div><span class="pill blue">10–15 min</span></div>
+    <div class="codewrap"><button class="copy">Copy</button><pre>export NS=troubleshoot-lab
+kubectl create namespace "$NS" --dry-run=client -o yaml | kubectl apply -f -
+
+cat &lt;&lt;'EOF' | kubectl apply -n "$NS" -f -
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pending-selector
+spec:
+  nodeSelector:
+    lab.gnugroup.org/nonexistent: "true"
+  containers:
+  - name: app
+    image: registry.k8s.io/pause:3.10
+EOF
+
+kubectl get pod pending-selector -n "$NS" -o wide
+kubectl describe pod pending-selector -n "$NS"</pre></div>
+    <div class="check"><input type="checkbox"><label>Find <code>FailedScheduling</code> and identify the exact selector mismatch.</label></div>
+    <div class="check"><input type="checkbox"><label>List node labels and prove that no node satisfies the selector.</label></div>
+    <div class="codewrap"><button class="copy">Copy</button><pre>kubectl get nodes --show-labels
+kubectl delete pod pending-selector -n "$NS"</pre></div>
+  </article>
+
+  <article class="lab">
+    <div class="labhead"><div><h3>Lab B — Service has no endpoints</h3><p class="objective">Objective: diagnose a Service selector that does not match the Pod label.</p></div><span class="pill blue">15–20 min</span></div>
+    <div class="codewrap"><button class="copy">Copy</button><pre>cat &lt;&lt;'EOF' | kubectl apply -n "$NS" -f -
+apiVersion: v1
+kind: Pod
+metadata:
+  name: web
+  labels:
+    app: web
+spec:
+  containers:
+  - name: web
+    image: nginx:1.27-alpine
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: web-svc
+spec:
+  selector:
+    app: wrong-label
+  ports:
+  - port: 80
+    targetPort: 80
+EOF
+
+kubectl get pod,svc -n "$NS"
+kubectl get endpointslices -n "$NS" \
+  -l kubernetes.io/service-name=web-svc -o wide
+kubectl describe svc web-svc -n "$NS"</pre></div>
+    <div class="check"><input type="checkbox"><label>Confirm the Service exists but has no usable endpoints.</label></div>
+    <div class="check"><input type="checkbox"><label>Compare Service selector with Pod labels.</label></div>
+    <div class="codewrap"><button class="copy">Copy</button><pre>kubectl patch svc web-svc -n "$NS" \
+  -p '{"spec":{"selector":{"app":"web"}}}'
+
+kubectl get endpointslices -n "$NS" \
+  -l kubernetes.io/service-name=web-svc -o wide</pre></div>
+  </article>
+
+  <article class="lab">
+    <div class="labhead"><div><h3>Lab C — PVC remains Pending</h3><p class="objective">Objective: distinguish missing/invalid storage provisioning from Pod scheduling.</p></div><span class="pill blue">15 min</span></div>
+    <div class="codewrap"><button class="copy">Copy</button><pre>cat &lt;&lt;'EOF' | kubectl apply -n "$NS" -f -
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: impossible-pvc
+spec:
+  accessModes:
+  - ReadWriteOnce
+  storageClassName: class-that-does-not-exist
+  resources:
+    requests:
+      storage: 1Gi
+EOF
+
+kubectl get pvc impossible-pvc -n "$NS"
+kubectl describe pvc impossible-pvc -n "$NS"
+kubectl get storageclass</pre></div>
+    <div class="check"><input type="checkbox"><label>Identify why dynamic provisioning cannot start.</label></div>
+    <div class="check"><input type="checkbox"><label>List actual StorageClasses and compare the requested class.</label></div>
+    <div class="codewrap"><button class="copy">Copy</button><pre>kubectl delete pvc impossible-pvc -n "$NS"</pre></div>
+  </article>
+
+  <article class="lab">
+    <div class="labhead"><div><h3>Lab D — Resource scheduling conflict</h3><p class="objective">Objective: observe scheduler rejection caused by an intentionally unrealistic request.</p></div><span class="pill blue">10–15 min</span></div>
+    <div class="codewrap"><button class="copy">Copy</button><pre>cat &lt;&lt;'EOF' | kubectl apply -n "$NS" -f -
+apiVersion: v1
+kind: Pod
+metadata:
+  name: too-much-memory
+spec:
+  containers:
+  - name: app
+    image: registry.k8s.io/pause:3.10
+    resources:
+      requests:
+        memory: "1Ti"
+        cpu: "100"
+EOF
+
+kubectl get pod too-much-memory -n "$NS"
+kubectl describe pod too-much-memory -n "$NS"
+kubectl describe nodes | grep -A8 -E '^Name:|Allocatable:'</pre></div>
+    <div class="check"><input type="checkbox"><label>Read the scheduler Event and note which requested resources cannot fit.</label></div>
+    <div class="check"><input type="checkbox"><label>Compare the request against node allocatable capacity.</label></div>
+  </article>
+
+  <div class="cmd-title">Lab cleanup</div>
+  <div class="codewrap"><button class="copy">Copy</button><pre>kubectl delete namespace "$NS"</pre></div>
+</section>
+
+
+<section class="section ref-anchor" id="cheatsheet">
+  <div class="kicker">Printable · One-page incident cheat sheet</div>
+  <h2>Kubernetes Troubleshooting — first 10 minutes</h2>
+  <button id="printCheat">Print only this cheat sheet</button>
+  <div class="printsheet">
+    <div class="printcols">
+      <div>
+        <h4>1. Establish scope</h4>
+        <ul><li>One Pod, one node, one namespace, or cluster-wide?</li><li>What changed immediately before the symptom?</li></ul>
+        <h4>2. Pod evidence</h4>
+        <pre>kubectl get pod POD -n NS -o wide
+kubectl describe pod POD -n NS
+kubectl logs POD -n NS --all-containers
+kubectl logs POD -n NS --all-containers --previous</pre>
+        <h4>3. Events</h4>
+        <pre>kubectl get events -n NS \
+  --sort-by=.lastTimestamp</pre>
+      </div>
+      <div>
+        <h4>4. Node</h4>
+        <pre>kubectl get nodes -o wide
+kubectl describe node NODE</pre>
+        <h4>5. Network</h4>
+        <pre>kubectl get svc SVC -n NS -o wide
+kubectl get endpointslices -n NS \
+ -l kubernetes.io/service-name=SVC</pre>
+        <h4>6. Storage</h4>
+        <pre>kubectl get pvc -n NS
+kubectl describe pvc PVC -n NS
+kubectl get pv,storageclass</pre>
+        <h4>7. Rule</h4>
+        <ul><li>Collect before deleting.</li><li>Change one proven cause at a time.</li><li>Verify the user path after the fix.</li></ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section ref-anchor" id="best">
+  <div class="kicker">7.6 · Best practices</div>
+  <h2>Make troubleshooting repeatable</h2>
+<div class="callout bad"><b>Never make these your first troubleshooting action:</b><ul><li>delete Pods before collecting Events/logs;</li><li>remove requests, affinity, taints, NetworkPolicies, or security controls merely to “make it work”;</li><li>edit bound PVs/storage topology without understanding data consequences;</li><li>restart kubelet/runtime/control-plane components before proving the fault is there;</li><li>treat <code>Running</code> as proof that the application is healthy or reachable.</li></ul></div>
+  <div class="grid2">
+    <div>
+      <h3>Operational habits</h3>
+      <div class="check"><input type="checkbox"><label>Capture <code>get</code>, <code>describe</code>, relevant logs, and Events before destructive action.</label></div>
+      <div class="check"><input type="checkbox"><label>Record namespace, Pod UID, node, image digest/tag, timestamps, and recent deployment/change history.</label></div>
+      <div class="check"><input type="checkbox"><label>Use labels consistently so Services, NetworkPolicies, monitoring, and ownership queries are predictable.</label></div>
+      <div class="check"><input type="checkbox"><label>Define realistic requests/limits based on measurements, not arbitrary defaults.</label></div>
+      <div class="check"><input type="checkbox"><label>Use readiness probes so unhealthy backends leave Service endpoint selection before they become user-visible failures.</label></div>
+    </div>
+    <div>
+      <h3>Escalation ladder</h3>
+      <ol class="steps">
+        <li>Object state and Events.</li>
+        <li>Application logs and previous container logs.</li>
+        <li>Service/endpoints/DNS/policy checks.</li>
+        <li>Node conditions, kubelet/runtime, CNI/CSI components.</li>
+        <li>Control-plane/component logs and implementation-specific diagnostics.</li>
+      </ol>
+    </div>
+  </div>
+
+  <div class="tabs" data-tabs="playbook">
+    <button class="tabbtn active" data-tab="b-pod">Pod command kit</button>
+    <button class="tabbtn" data-tab="b-net">Network kit</button>
+    <button class="tabbtn" data-tab="b-storage">Storage kit</button>
+  </div>
+  <div id="b-pod" class="tabpanel active">
+    <div class="codewrap"><button class="copy">Copy</button><pre>kubectl get pod &lt;pod&gt; -n &lt;ns&gt; -o wide
+kubectl describe pod &lt;pod&gt; -n &lt;ns&gt;
+kubectl logs &lt;pod&gt; -n &lt;ns&gt; --all-containers=true
+kubectl logs &lt;pod&gt; -n &lt;ns&gt; --all-containers=true --previous
+kubectl get events -n &lt;ns&gt; --sort-by=.lastTimestamp</pre></div>
+  </div>
+  <div id="b-net" class="tabpanel">
+    <div class="codewrap"><button class="copy">Copy</button><pre>kubectl get svc -n &lt;ns&gt;
+kubectl describe svc &lt;svc&gt; -n &lt;ns&gt;
+kubectl get endpointslices -n &lt;ns&gt; \
+  -l kubernetes.io/service-name=&lt;svc&gt;
+kubectl get networkpolicy -n &lt;ns&gt;
+kubectl get pods -n kube-system -o wide</pre></div>
+  </div>
+  <div id="b-storage" class="tabpanel">
+    <div class="codewrap"><button class="copy">Copy</button><pre>kubectl get pvc -n &lt;ns&gt;
+kubectl describe pvc &lt;pvc&gt; -n &lt;ns&gt;
+kubectl get pv
+kubectl get storageclass
+kubectl get pods -A | grep -i csi
+kubectl get events -A --sort-by=.lastTimestamp | grep -Ei 'volume|mount|attach|pvc|csi'</pre></div>
+  </div>
+
+  <h3 style="margin-top:24px">Knowledge check</h3>
+  <div class="quiz">
+    <div class="q" data-answer="b"><b>1. A Pod is Pending and has no assigned node. What is the best first evidence source?</b><br>
+      <button data-choice="a">Application logs</button><button data-choice="b">Pod describe + Events</button><button data-choice="c">Delete the Pod</button>
+      <div class="answer"></div>
+    </div>
+    <div class="q" data-answer="c"><b>2. A Service resolves in DNS but its EndpointSlice contains no ready backend addresses. Which area should you inspect first?</b><br>
+      <button data-choice="a">Cluster certificate expiry</button><button data-choice="b">Node kernel version</button><button data-choice="c">Service selector and Pod readiness</button>
+      <div class="answer"></div>
+    </div>
+    <div class="q" data-answer="a"><b>3. Which statement about scheduling and resource usage is most accurate?</b><br>
+      <button data-choice="a">Scheduler fit primarily uses requests vs allocatable capacity</button><button data-choice="b">Scheduler uses kubectl top live CPU exclusively</button><button data-choice="c">Limits are always ignored</button>
+      <div class="answer"></div>
+    </div>
+  </div>
+
+  <div class="callout good" style="margin-top:20px"><b>Core principle:</b> every troubleshooting step should answer one question. If the command you run cannot prove or disprove a hypothesis, it is probably noise rather than diagnosis.</div>
+</section>
+
+<section class="section">
+  <div class="kicker">Quick incident template</div>
+  <h2>Capture this before escalation</h2>
+  <div class="codewrap"><button class="copy">Copy</button><pre>Incident:
+Time observed:
+Namespace:
+Workload / Pod:
+Node:
+User-visible symptom:
+Expected behavior:
+Actual behavior:
+Recent changes:
+
+Evidence:
+- kubectl get ...
+- kubectl describe ...
+- Events:
+- Logs:
+- Service / EndpointSlice:
+- PVC / PV / StorageClass:
+- Node condition:
+- CNI / CSI status:
+
+Hypothesis:
+Targeted test:
+Result:
+Fix:
+Verification:
+Follow-up prevention:</pre></div>
+</section>
+
+</main>
+
+<button class="triage-fab" id="triageFab">Quick Triage</button><aside class="triage-drawer" id="triageDrawer" aria-label="Quick triage command console"><div class="drawer-head"><div><div class="kicker">Incident console</div><b>Generated from your variables</b></div><button id="triageClose">Close</button></div><p class="learning">Set Namespace, Pod, Node, Service, and PVC in Quick Reference. Commands update automatically.</p><div class="quickgrid" id="quickgrid"></div><div class="cmd-title">Full evidence bundle</div><div class="codewrap"><button class="copy dyn-copy">Copy</button><pre id="bundle"></pre></div></aside>
+<footer class="wrap footer">
+  Kubernetes Troubleshooting Field Manual v1.2.1 Verified · Self-study, hands-on practice, and incident-time quick reference.
+</footer>
+
+<script>
+const root=document.documentElement;
+const saved=localStorage.getItem('k8s-troubleshoot-theme');
+if(saved) root.dataset.theme=saved;
+document.getElementById('theme').onclick=()=>{
+  const next=root.dataset.theme==='light'?'dark':'light';
+  root.dataset.theme=next; localStorage.setItem('k8s-troubleshoot-theme',next);
+};
+
+document.querySelectorAll('.copy').forEach(btn=>{
+  btn.addEventListener('click',async()=>{
+    const text=btn.nextElementSibling.innerText;
+    await navigator.clipboard.writeText(text);
+    const old=btn.textContent; btn.textContent='Copied ✓';
+    setTimeout(()=>btn.textContent=old,1200);
+  });
+});
+
+document.querySelectorAll('[data-tabs]').forEach(group=>{
+  group.querySelectorAll('.tabbtn').forEach(btn=>{
+    btn.onclick=()=>{
+      group.querySelectorAll('.tabbtn').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      const section=group.parentElement;
+      section.querySelectorAll(':scope > .tabpanel').forEach(p=>p.classList.remove('active'));
+      document.getElementById(btn.dataset.tab).classList.add('active');
+    };
+  });
+});
+
+document.querySelectorAll('.q').forEach(q=>{
+  q.querySelectorAll('button').forEach(b=>{
+    b.onclick=()=>{
+      const ok=b.dataset.choice===q.dataset.answer;
+      q.querySelector('.answer').textContent=ok?'Correct — good diagnostic reasoning.':'Not quite — re-read the evidence flow above.';
+      q.querySelector('.answer').style.color=ok?'var(--good)':'var(--bad)';
+    };
+  });
+});
+
+const search=document.getElementById('search');
+search.addEventListener('input',()=>{
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('highlight'));
+  const term=search.value.trim().toLowerCase();
+  if(term.length<3)return;
+  const hit=[...document.querySelectorAll('.section')].find(s=>s.innerText.toLowerCase().includes(term));
+  if(hit){hit.classList.add('highlight');hit.scrollIntoView({behavior:'smooth',block:'start'});}
+});
+
+const modeButtons=document.querySelectorAll('.modebtn');
+function setMode(mode){document.body.classList.remove('quick','learn','deepmode');document.body.classList.add(mode);modeButtons.forEach(b=>b.classList.toggle('active',b.dataset.mode===mode));localStorage.setItem('k8s-manual-mode',mode)}
+modeButtons.forEach(b=>b.addEventListener('click',()=>setMode(b.dataset.mode)));setMode(localStorage.getItem('k8s-manual-mode')||'learn');
+const V={NS:document.getElementById('vNS'),POD:document.getElementById('vPOD'),NODE:document.getElementById('vNODE'),SVC:document.getElementById('vSVC'),PVC:document.getElementById('vPVC')};
+Object.entries(V).forEach(([k,el])=>{const sv=localStorage.getItem('k8s-var-'+k);if(sv)el.value=sv;el.addEventListener('input',()=>{localStorage.setItem('k8s-var-'+k,el.value);renderQuick()})});
+function vals(){return Object.fromEntries(Object.entries(V).map(([k,e])=>[k,e.value.trim()||k.toLowerCase()]))}
+function renderQuick(){const v=vals();const cmds=[['Pod state',`kubectl get pod ${v.POD} -n ${v.NS} -o wide`],['Describe Pod',`kubectl describe pod ${v.POD} -n ${v.NS}`],['Previous logs',`kubectl logs ${v.POD} -n ${v.NS} --all-containers=true --previous`],['Recent Events',`kubectl get events -n ${v.NS} --sort-by=.lastTimestamp`],['Service',`kubectl describe svc ${v.SVC} -n ${v.NS}`],['EndpointSlices',`kubectl get endpointslices -n ${v.NS} -l kubernetes.io/service-name=${v.SVC} -o wide`],['PVC',`kubectl describe pvc ${v.PVC} -n ${v.NS}`],['Node',`kubectl describe node ${v.NODE}`],
+    ['Auth check',`kubectl auth can-i --list -n ${v.NS}`],
+    ['Cilium status',`cilium status --wait`],
+    ['CSI inventory',`kubectl get csidrivers,csinodes`]];document.getElementById('quickgrid').innerHTML=cmds.map(([name,cmd])=>`<div class="quickcmd"><b>${name}</b><pre>${cmd}</pre><button data-cmd="${cmd.replace(/"/g,'&quot;')}">Copy command</button></div>`).join('');document.querySelectorAll('#quickgrid button').forEach(b=>b.onclick=async()=>{await navigator.clipboard.writeText(b.dataset.cmd);b.textContent='Copied ✓';setTimeout(()=>b.textContent='Copy command',1000)});document.getElementById('bundle').textContent=[`kubectl get pod ${v.POD} -n ${v.NS} -o wide`,`kubectl describe pod ${v.POD} -n ${v.NS}`,`kubectl logs ${v.POD} -n ${v.NS} --all-containers=true --tail=200`,`kubectl logs ${v.POD} -n ${v.NS} --all-containers=true --previous --tail=200`,`kubectl get events -n ${v.NS} --sort-by=.lastTimestamp`,`kubectl get svc ${v.SVC} -n ${v.NS} -o yaml`,`kubectl get endpointslices -n ${v.NS} -l kubernetes.io/service-name=${v.SVC} -o wide`,`kubectl get pvc ${v.PVC} -n ${v.NS} -o wide`,`kubectl describe node ${v.NODE}`].join('\n')}
+renderQuick();const drawer=document.getElementById('triageDrawer');document.getElementById('triageFab').onclick=()=>drawer.classList.toggle('open');document.getElementById('triageClose').onclick=()=>drawer.classList.remove('open');document.querySelectorAll('.dyn-copy').forEach(btn=>btn.onclick=async()=>{await navigator.clipboard.writeText(btn.nextElementSibling.innerText);btn.textContent='Copied ✓';setTimeout(()=>btn.textContent='Copy',1200)});
+
+
+const printCheat=document.getElementById('printCheat');
+if(printCheat){
+  printCheat.onclick=()=>{
+    document.body.classList.add('print-cheat');
+    window.print();
+    setTimeout(()=>document.body.classList.remove('print-cheat'),500);
+  };
+}
+
+</script>
+</body>
+</html>
