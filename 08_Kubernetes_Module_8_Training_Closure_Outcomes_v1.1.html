@@ -1,0 +1,820 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="Kubernetes Training Closure & Outcomes — interactive self-study reference for production scheduling, security, ingress, storage and troubleshooting.">
+<title>Kubernetes Training Closure & Outcomes</title>
+<style>
+:root{
+  --bg:#07111b;--bg2:#0b1724;--panel:#0f1f2f;--panel2:#13283a;--text:#e8f2fb;--muted:#9bb1c7;
+  --line:#24445f;--cyan:#42d9ff;--green:#67f5a5;--amber:#ffd166;--red:#ff6b7a;--violet:#b09cff;
+  --shadow:0 18px 55px rgba(0,0,0,.34);--code:#06101a;--chip:#173249;--focus:#fff;
+}
+html[data-theme="light"]{
+  --bg:#eef5fa;--bg2:#f8fbfd;--panel:#ffffff;--panel2:#f3f8fb;--text:#102131;--muted:#566f84;
+  --line:#c7d9e6;--cyan:#007da5;--green:#137a46;--amber:#a66500;--red:#b42338;--violet:#6848be;
+  --shadow:0 18px 50px rgba(22,54,76,.13);--code:#10202d;--chip:#e4f0f7;--focus:#07111b;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:
+radial-gradient(circle at 12% 15%,rgba(66,217,255,.08),transparent 26%),
+radial-gradient(circle at 88% 8%,rgba(176,156,255,.09),transparent 24%),
+linear-gradient(180deg,var(--bg),var(--bg2));color:var(--text);line-height:1.6}
+a{color:var(--cyan)}
+button{font:inherit}
+.skip{position:absolute;left:-9999px}.skip:focus{left:12px;top:12px;z-index:1000;background:var(--panel);padding:.6rem 1rem;border-radius:10px}
+.topbar{position:sticky;top:0;z-index:60;backdrop-filter:blur(14px);background:color-mix(in srgb,var(--bg) 82%,transparent);border-bottom:1px solid var(--line)}
+.topbar .inner{max-width:1480px;margin:auto;padding:.7rem 1.1rem;display:flex;gap:.7rem;align-items:center}
+.brand{font-weight:800;letter-spacing:.02em;white-space:nowrap}.brand small{display:block;color:var(--muted);font-size:.72rem;font-weight:600}
+.progress{height:5px;background:var(--panel2);overflow:hidden}.progress>span{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--cyan),var(--green),var(--violet));transition:width .2s}
+.actions{margin-left:auto;display:flex;gap:.45rem}
+.iconbtn,.pillbtn,.copybtn{border:1px solid var(--line);background:var(--panel);color:var(--text);border-radius:10px;padding:.5rem .7rem;cursor:pointer}
+.iconbtn:hover,.pillbtn:hover,.copybtn:hover{border-color:var(--cyan)}
+.layout{max-width:1480px;margin:auto;display:grid;grid-template-columns:285px 1fr;gap:1.2rem;padding:1.2rem}
+.sidebar{position:sticky;top:78px;height:calc(100vh - 92px);overflow:auto;background:color-mix(in srgb,var(--panel) 88%,transparent);border:1px solid var(--line);border-radius:18px;padding:1rem;box-shadow:var(--shadow)}
+.sidebar h3{margin:.2rem 0 .8rem;font-size:.85rem;text-transform:uppercase;letter-spacing:.12em;color:var(--muted)}
+.navlink{display:block;text-decoration:none;color:var(--muted);padding:.54rem .65rem;border-radius:9px;margin:.12rem 0;border-left:3px solid transparent}
+.navlink:hover,.navlink.active{background:var(--chip);color:var(--text);border-left-color:var(--cyan)}
+.sidecard{margin-top:1rem;padding:.8rem;border:1px solid var(--line);border-radius:14px;background:var(--panel2);font-size:.86rem}
+.sidecard strong{color:var(--green)}
+main{min-width:0}
+.hero{position:relative;overflow:hidden;border:1px solid var(--line);border-radius:24px;background:
+linear-gradient(135deg,rgba(66,217,255,.11),rgba(176,156,255,.08) 55%,rgba(103,245,165,.07)),var(--panel);
+padding:2.1rem;box-shadow:var(--shadow)}
+.kicker{display:inline-flex;gap:.45rem;align-items:center;padding:.28rem .6rem;border:1px solid var(--line);border-radius:999px;color:var(--cyan);font-size:.8rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
+.hero h1{font-size:clamp(2.1rem,4vw,4.5rem);line-height:1.02;margin:.8rem 0 .9rem;max-width:900px}
+.hero p{font-size:1.05rem;color:var(--muted);max-width:960px}
+.hero-grid{display:grid;grid-template-columns:1.3fr .7fr;gap:1.2rem;align-items:center}
+.hero-visual{min-height:290px;display:grid;place-items:center}
+.pulse-ring{animation:pulse 2.8s ease-in-out infinite;transform-origin:center}
+@keyframes pulse{0%,100%{opacity:.35;transform:scale(.97)}50%{opacity:1;transform:scale(1.04)}}
+.section{margin-top:1.25rem;border:1px solid var(--line);border-radius:20px;background:var(--panel);padding:1.35rem;box-shadow:var(--shadow)}
+.section h2{margin:.1rem 0 .4rem;font-size:1.65rem}.section>.lead{margin-top:0;color:var(--muted)}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1rem}.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1rem}
+.card{border:1px solid var(--line);border-radius:16px;background:var(--panel2);padding:1rem;position:relative;overflow:hidden}
+.card h3{margin:.15rem 0 .45rem}.card p,.card li{color:var(--muted)}
+.card::before{content:"";position:absolute;inset:0 auto auto 0;width:4px;height:100%;background:var(--cyan)}
+.card.green::before{background:var(--green)}.card.amber::before{background:var(--amber)}.card.red::before{background:var(--red)}.card.violet::before{background:var(--violet)}
+.tag{display:inline-block;padding:.18rem .5rem;border-radius:999px;background:var(--chip);border:1px solid var(--line);font-size:.73rem;color:var(--muted)}
+.callout{border-left:4px solid var(--amber);background:color-mix(in srgb,var(--amber) 9%,var(--panel2));padding:.9rem 1rem;border-radius:10px;margin:1rem 0}
+.callout strong{color:var(--amber)}
+.assumption{border-left-color:var(--violet);background:color-mix(in srgb,var(--violet) 9%,var(--panel2))}
+.assumption strong{color:var(--violet)}
+.success{border-left-color:var(--green);background:color-mix(in srgb,var(--green) 9%,var(--panel2))}
+.success strong{color:var(--green)}
+details{border:1px solid var(--line);border-radius:13px;background:var(--panel2);margin:.7rem 0;overflow:hidden}
+summary{cursor:pointer;font-weight:750;padding:.85rem 1rem;list-style:none;display:flex;justify-content:space-between;align-items:center}
+summary::-webkit-details-marker{display:none}summary::after{content:"＋";color:var(--cyan);font-size:1.2rem}details[open] summary::after{content:"−"}
+.details-body{padding:0 1rem 1rem}
+.codewrap{position:relative;margin:.7rem 0}.codewrap pre{margin:0;padding:1rem 1rem 1.2rem;background:var(--code);color:#d8f2ff;border:1px solid #24445f;border-radius:14px;overflow:auto;font-size:.86rem;line-height:1.55}.copybtn{position:absolute;right:.55rem;top:.55rem;background:#10283a;color:#d8f2ff;font-size:.78rem}
+.flow{width:100%;min-height:420px;border:1px solid var(--line);border-radius:16px;background:var(--panel2);padding:.5rem}
+svg text{font-family:Inter,system-ui,sans-serif}
+.node{cursor:pointer;transition:.2s}.node:hover{filter:drop-shadow(0 0 7px rgba(66,217,255,.7))}
+.tabs{display:flex;gap:.4rem;flex-wrap:wrap;margin:.8rem 0}.tabbtn{border:1px solid var(--line);background:var(--panel2);color:var(--muted);padding:.55rem .75rem;border-radius:10px;cursor:pointer}.tabbtn.active{color:var(--text);border-color:var(--cyan);background:var(--chip)}
+.tabpanel{display:none}.tabpanel.active{display:block}
+.matrix{overflow:auto}.matrix table{width:100%;border-collapse:collapse;min-width:850px}.matrix th,.matrix td{border-bottom:1px solid var(--line);padding:.75rem;text-align:left;vertical-align:top}.matrix th{color:var(--cyan);font-size:.85rem}.matrix td{color:var(--muted)}.matrix td:first-child{color:var(--text);font-weight:700}
+.checklist label{display:flex;gap:.65rem;align-items:flex-start;padding:.65rem .1rem;border-bottom:1px dashed var(--line)}.checklist input{margin-top:.35rem;accent-color:var(--green);transform:scale(1.15)}
+.meter{height:12px;background:var(--bg);border-radius:999px;overflow:hidden;border:1px solid var(--line)}.meter span{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--red),var(--amber),var(--green));transition:width .3s}
+.quizq{padding:1rem;border:1px solid var(--line);border-radius:14px;background:var(--panel2);margin:.75rem 0}.quizq p{margin-top:0;font-weight:750}.quizq label{display:block;margin:.42rem 0;color:var(--muted);cursor:pointer}.quizresult{padding:1rem;border:1px solid var(--line);border-radius:14px;margin-top:1rem;display:none}
+.command-map{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.7rem}.command-map button{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:.8rem;color:var(--text);text-align:left;cursor:pointer}.command-map button:hover{border-color:var(--cyan)}.command-map small{display:block;color:var(--muted)}
+.timeline{position:relative;margin:1rem 0}.timeline::before{content:"";position:absolute;left:18px;top:6px;bottom:6px;width:2px;background:linear-gradient(var(--cyan),var(--green),var(--violet))}.titem{position:relative;padding-left:52px;margin:1rem 0}.dot{position:absolute;left:8px;top:.2rem;width:21px;height:21px;border:4px solid var(--panel);border-radius:50%;background:var(--cyan);box-shadow:0 0 0 2px var(--line)}
+.titem:nth-child(2) .dot{background:var(--green)}.titem:nth-child(3) .dot{background:var(--amber)}.titem:nth-child(4) .dot{background:var(--violet)}.titem:nth-child(5) .dot{background:var(--red)}
+kbd{padding:.1rem .35rem;border:1px solid var(--line);border-bottom-width:2px;border-radius:6px;background:var(--panel2)}
+.footer{text-align:center;color:var(--muted);padding:2rem .5rem 5rem}
+#toast{position:fixed;right:20px;bottom:20px;background:var(--panel);border:1px solid var(--cyan);padding:.65rem .85rem;border-radius:11px;box-shadow:var(--shadow);opacity:0;pointer-events:none;transition:.2s;z-index:100}
+#toast.show{opacity:1}
+@media(max-width:1020px){.layout{grid-template-columns:1fr}.sidebar{display:none}.hero-grid,.grid2,.grid3{grid-template-columns:1fr}.command-map{grid-template-columns:1fr 1fr}}
+@media(max-width:640px){.layout{padding:.7rem}.hero,.section{padding:1rem}.actions .label{display:none}.command-map{grid-template-columns:1fr}.hero h1{font-size:2.35rem}}
+@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;animation:none!important;transition:none!important}}
+
+/* v1.1 enhancements */
+.mode-badge{display:inline-block;margin-left:.45rem;padding:.18rem .46rem;border-radius:999px;border:1px solid var(--line);font-size:.72rem;color:var(--green);background:var(--chip)}
+.trainer-only{display:none}
+body.trainer-mode .trainer-only{display:block}
+body.trainer-mode .learner-answer{filter:blur(5px);user-select:none;cursor:pointer}
+body.trainer-mode .learner-answer.revealed{filter:none}
+.scenario-grid{display:grid;grid-template-columns:1.1fr .9fr;gap:1rem}
+.incident-console{background:var(--code);border:1px solid var(--line);border-radius:14px;padding:1rem;color:#d8f2ff;min-height:260px;white-space:pre-wrap;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.86rem}
+.stepper{display:grid;gap:.65rem}.step-card{border:1px solid var(--line);border-radius:13px;background:var(--panel2);padding:.8rem;cursor:pointer}.step-card.active{border-color:var(--cyan);box-shadow:0 0 0 2px color-mix(in srgb,var(--cyan) 20%,transparent)}.step-card small{color:var(--muted)}
+.tree-wrap{overflow:auto;border:1px solid var(--line);border-radius:16px;background:var(--panel2);padding:.75rem}
+.tree-node{cursor:pointer}.tree-node rect{transition:.18s}.tree-node:hover rect{stroke:var(--green);stroke-width:3}
+.tree-result{margin-top:1rem;padding:1rem;border:1px solid var(--line);border-radius:14px;background:var(--panel2)}
+.lab-card{border:1px solid var(--line);border-radius:15px;padding:1rem;background:var(--panel2);margin:.8rem 0}.lab-card h3{margin-top:.1rem}.lab-meta{display:flex;gap:.45rem;flex-wrap:wrap;margin-bottom:.6rem}
+.badge-danger{color:var(--red)}.badge-prod{color:var(--amber)}.badge-prereq{color:var(--violet)}
+.coach{position:fixed;right:18px;bottom:18px;z-index:90;width:min(360px,calc(100vw - 28px));border:1px solid var(--line);border-radius:18px;background:color-mix(in srgb,var(--panel) 96%,transparent);box-shadow:var(--shadow);overflow:hidden}
+.coach.min .coach-body{display:none}.coach-head{display:flex;align-items:center;gap:.5rem;padding:.7rem .8rem;border-bottom:1px solid var(--line);background:var(--panel2)}.coach-head strong{flex:1}.coach-body{padding:.8rem}.coach-actions{display:grid;grid-template-columns:1fr 1fr;gap:.45rem;margin-top:.6rem}.coach-actions button{border:1px solid var(--line);background:var(--panel2);color:var(--text);border-radius:10px;padding:.55rem;cursor:pointer}.coach-actions button:hover{border-color:var(--cyan)}.coach-output{max-height:240px;overflow:auto;color:var(--muted);font-size:.9rem;white-space:pre-wrap}.coach-stop{border-color:var(--red)!important;color:var(--red)!important}
+.capstone-task{counter-reset:cap}.capstone-task li{margin:.55rem 0;color:var(--muted)}
+@media(max-width:900px){.scenario-grid{grid-template-columns:1fr}.coach{right:10px;bottom:10px}}
+
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<div class="topbar">
+  <div class="inner">
+    <div class="brand">GNU Group • Kubernetes Operations <small>Module 8 — Training Closure & Outcomes • v1.1</small></div>
+    <div class="actions">
+      <button class="iconbtn" id="expandAll" title="Expand all sections">▤ <span class="label">Expand</span></button>
+      <button class="iconbtn" id="modeBtn" title="Toggle learner/trainer mode">◫ <span class="label">Learner mode</span></button>
+      <button class="iconbtn" id="themeBtn" title="Toggle light/dark theme">☀︎ <span class="label">Theme</span></button>
+    </div>
+  </div>
+  <div class="progress"><span id="progressBar"></span></div>
+</div>
+
+<div class="layout">
+<aside class="sidebar" aria-label="Module navigation">
+  <h3>Closure Map</h3>
+  <a class="navlink" href="#overview">1. Where you are now</a>
+  <a class="navlink" href="#outcomes">2. Production outcomes</a>
+  <a class="navlink" href="#integrated">3. Integrated architecture</a>
+  <a class="navlink" href="#scheduling">4. Scheduling mastery</a>
+  <a class="navlink" href="#security">5. Workload security</a>
+  <a class="navlink" href="#ingress">6. Safe service exposure</a>
+  <a class="navlink" href="#storage">7. Reliable persistence</a>
+  <a class="navlink" href="#troubleshooting">8. Troubleshooting confidence</a>
+  <a class="navlink" href="#incident">9. Integrated incident</a>
+  <a class="navlink" href="#decisiontree">10. Decision tree</a>
+  <a class="navlink" href="#failurelabs">11. Failure-injection labs</a>
+  <a class="navlink" href="#commands">12. Command field kit</a>
+  <a class="navlink" href="#readiness">13. Production readiness</a>
+  <a class="navlink" href="#assessment">14. Final assessment</a>
+  <a class="navlink" href="#capstone">15. Capstone challenge</a>
+  <a class="navlink" href="#next">16. What comes next</a>
+  <div class="sidecard"><strong>Series continuity</strong><br>Earlier modules moved from scheduling → identity/security → ingress → storage → health → network policy → troubleshooting. This module joins those ideas into one operational model.</div>
+</aside>
+
+<main id="main">
+<section class="hero" id="overview">
+  <div class="hero-grid">
+    <div>
+      <span class="kicker">Module 8 • Closure & Outcomes</span>
+      <h1>From Kubernetes Features to Production Decisions</h1>
+      <p>This closure module is designed to answer a more important question than “did you finish the labs?”: <strong>can you combine scheduling, identity, traffic, storage, health and troubleshooting concepts into safe operational decisions?</strong></p>
+      <div class="callout success"><strong>Learning goal:</strong> by the end, you should be able to explain not only <em>what</em> a Kubernetes control does, but <em>why</em> you would use it, what it changes in the cluster, how to verify it, and how to troubleshoot it when reality differs from design.</div>
+    </div>
+    <div class="hero-visual">
+      <svg viewBox="0 0 420 320" role="img" aria-label="Animated Kubernetes competency orbit">
+        <defs>
+          <filter id="glow"><feGaussianBlur stdDeviation="4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+        </defs>
+        <circle cx="210" cy="160" r="115" fill="none" stroke="var(--line)" stroke-width="2" stroke-dasharray="7 9"/>
+        <circle class="pulse-ring" cx="210" cy="160" r="80" fill="none" stroke="var(--cyan)" stroke-width="2" opacity=".55"/>
+        <circle cx="210" cy="160" r="52" fill="var(--panel2)" stroke="var(--cyan)" stroke-width="2" filter="url(#glow)"/>
+        <text x="210" y="153" text-anchor="middle" fill="var(--text)" font-size="18" font-weight="800">PRODUCTION</text>
+        <text x="210" y="178" text-anchor="middle" fill="var(--muted)" font-size="13">Kubernetes Thinking</text>
+        <g fill="var(--panel2)" stroke-width="2">
+          <circle cx="210" cy="34" r="35" stroke="var(--green)"/><circle cx="330" cy="110" r="35" stroke="var(--cyan)"/>
+          <circle cx="286" cy="260" r="35" stroke="var(--violet)"/><circle cx="134" cy="260" r="35" stroke="var(--amber)"/>
+          <circle cx="90" cy="110" r="35" stroke="var(--red)"/>
+        </g>
+        <g text-anchor="middle" fill="var(--text)" font-size="11" font-weight="700">
+          <text x="210" y="39">SCHEDULING</text><text x="330" y="115">SECURITY</text><text x="286" y="265">INGRESS</text>
+          <text x="134" y="265">STORAGE</text><text x="90" y="115">DEBUG</text>
+        </g>
+      </svg>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="outcomes">
+<h2>2. What “successful completion” actually means</h2>
+<p class="lead">The following outcomes are framed as production capabilities. Each outcome connects design intent, implementation mechanisms and operational evidence.</p>
+<div class="grid3">
+  <div class="card green"><span class="tag">Outcome 01</span><h3>Advanced scheduling</h3><p>Design placement rules that express hardware needs, failure-domain intent, co-location/anti-co-location, dedicated capacity and disruption tolerance without making the scheduler impossible to satisfy.</p></div>
+  <div class="card violet"><span class="tag">Outcome 02</span><h3>Workload security</h3><p>Reduce identity and network blast radius with purpose-specific ServiceAccounts, minimal RBAC, token hygiene, NetworkPolicies and secure pod defaults.</p></div>
+  <div class="card"><span class="tag">Outcome 03</span><h3>Safe service exposure</h3><p>Expose workloads through Services and Ingress with correct host/path routing, TLS termination, backend health awareness and a clear understanding of what the ingress controller actually implements.</p></div>
+  <div class="card amber"><span class="tag">Outcome 04</span><h3>Persistent storage</h3><p>Choose and verify StorageClass, PV/PVC, access mode, binding mode, reclaim behavior and failure-domain decisions so application data survives pod replacement safely.</p></div>
+  <div class="card red"><span class="tag">Outcome 05</span><h3>Troubleshooting</h3><p>Work from symptom → Kubernetes object state → event → dependency → node/network/storage evidence instead of guessing or immediately restarting components.</p></div>
+  <div class="card"><span class="tag">Meta-skill</span><h3>Operational verification</h3><p>Treat YAML as desired state, not proof. Verify scheduler decisions, endpoints, identities, policies, mounts, events and traffic paths after every significant change.</p></div>
+</div>
+<div class="assumption callout"><strong>Assumed from earlier modules:</strong> Deployments, Pods, Services, namespaces, labels/selectors, kubectl basics, container logs and basic cluster networking are already familiar. If any of those are weak, use this document as a map of what to revisit rather than memorizing the commands.</div>
+</section>
+
+<section class="section" id="integrated">
+<h2>3. One integrated production model</h2>
+<p class="lead">A production workload is never “just a Pod.” Its behavior emerges from multiple control planes and data paths working together.</p>
+<div class="flow">
+<svg viewBox="0 0 1100 440" width="100%" height="100%" role="img" aria-label="Integrated Kubernetes production flow">
+  <defs>
+    <marker id="arrow" markerWidth="9" markerHeight="9" refX="8" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="var(--cyan)"/></marker>
+    <marker id="arrowG" markerWidth="9" markerHeight="9" refX="8" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="var(--green)"/></marker>
+  </defs>
+  <rect x="35" y="170" width="135" height="80" rx="16" fill="var(--panel)" stroke="var(--cyan)" stroke-width="2"/>
+  <text x="102" y="203" text-anchor="middle" fill="var(--text)" font-weight="800">Client</text><text x="102" y="224" text-anchor="middle" fill="var(--muted)" font-size="12">DNS / HTTPS</text>
+  <rect x="220" y="150" width="165" height="120" rx="16" fill="var(--panel)" stroke="var(--violet)" stroke-width="2"/>
+  <text x="303" y="190" text-anchor="middle" fill="var(--text)" font-weight="800">Ingress Controller</text><text x="303" y="213" text-anchor="middle" fill="var(--muted)" font-size="12">Host + path + TLS</text><text x="303" y="235" text-anchor="middle" fill="var(--muted)" font-size="12">Implementation matters</text>
+  <rect x="445" y="150" width="155" height="120" rx="16" fill="var(--panel)" stroke="var(--cyan)" stroke-width="2"/>
+  <text x="522" y="190" text-anchor="middle" fill="var(--text)" font-weight="800">Service</text><text x="522" y="213" text-anchor="middle" fill="var(--muted)" font-size="12">Selector → endpoints</text><text x="522" y="235" text-anchor="middle" fill="var(--muted)" font-size="12">Readiness controls reachability</text>
+  <rect x="660" y="120" width="175" height="180" rx="16" fill="var(--panel)" stroke="var(--green)" stroke-width="2"/>
+  <text x="748" y="160" text-anchor="middle" fill="var(--text)" font-weight="800">Pod</text><text x="748" y="184" text-anchor="middle" fill="var(--muted)" font-size="12">ServiceAccount / RBAC</text><text x="748" y="205" text-anchor="middle" fill="var(--muted)" font-size="12">Probes / Resources</text><text x="748" y="226" text-anchor="middle" fill="var(--muted)" font-size="12">NetworkPolicy applies</text><text x="748" y="247" text-anchor="middle" fill="var(--muted)" font-size="12">PVC mounted</text>
+  <rect x="905" y="150" width="155" height="120" rx="16" fill="var(--panel)" stroke="var(--amber)" stroke-width="2"/>
+  <text x="982" y="190" text-anchor="middle" fill="var(--text)" font-weight="800">Persistent Volume</text><text x="982" y="213" text-anchor="middle" fill="var(--muted)" font-size="12">CSI / StorageClass</text><text x="982" y="235" text-anchor="middle" fill="var(--muted)" font-size="12">Topology matters</text>
+  <line x1="170" y1="210" x2="218" y2="210" stroke="var(--cyan)" stroke-width="3" marker-end="url(#arrow)"/>
+  <line x1="385" y1="210" x2="443" y2="210" stroke="var(--cyan)" stroke-width="3" marker-end="url(#arrow)"/>
+  <line x1="600" y1="210" x2="658" y2="210" stroke="var(--cyan)" stroke-width="3" marker-end="url(#arrow)"/>
+  <line x1="835" y1="210" x2="903" y2="210" stroke="var(--green)" stroke-width="3" marker-end="url(#arrowG)"/>
+  <rect x="660" y="340" width="175" height="66" rx="14" fill="var(--panel2)" stroke="var(--red)" stroke-width="2"/>
+  <text x="748" y="367" text-anchor="middle" fill="var(--text)" font-weight="800">Scheduler / Node</text><text x="748" y="388" text-anchor="middle" fill="var(--muted)" font-size="12">labels • affinity • taints • capacity</text>
+  <line x1="748" y1="340" x2="748" y2="302" stroke="var(--red)" stroke-width="3" marker-end="url(#arrow)"/>
+  <rect x="445" y="40" width="155" height="66" rx="14" fill="var(--panel2)" stroke="var(--violet)" stroke-width="2"/>
+  <text x="522" y="66" text-anchor="middle" fill="var(--text)" font-weight="800">NetworkPolicy</text><text x="522" y="87" text-anchor="middle" fill="var(--muted)" font-size="12">Allowed peers + ports</text>
+  <line x1="522" y1="106" x2="522" y2="147" stroke="var(--violet)" stroke-width="3" marker-end="url(#arrow)"/>
+</svg>
+</div>
+<div class="callout"><strong>Operational insight:</strong> when an application fails, the visible symptom may be several layers away from the cause. An HTTP 503 could be an ingress problem, but it could also be zero ready endpoints, a failed readiness probe, a selector mismatch, a denied network path, a Pending pod, or a storage-related startup failure.</div>
+</section>
+
+<section class="section" id="scheduling">
+<h2>4. Outcome: design advanced scheduling strategies</h2>
+<p class="lead">Production scheduling is constraint design. The goal is not to use every feature; it is to express the minimum set of constraints needed for reliability, compliance and performance.</p>
+<div class="tabs" data-tabs="sched">
+  <button class="tabbtn active" data-tab="sched-purpose">Decision model</button>
+  <button class="tabbtn" data-tab="sched-patterns">Patterns</button>
+  <button class="tabbtn" data-tab="sched-verify">Verification</button>
+</div>
+<div id="sched-purpose" class="tabpanel active">
+  <div class="grid2">
+    <div class="card"><h3>Hard constraints</h3><p>Use when placement is invalid unless a condition is true.</p><ul><li><code>nodeSelector</code></li><li><code>requiredDuringSchedulingIgnoredDuringExecution</code></li><li>Untolerated taints</li><li>Volume topology constraints</li></ul></div>
+    <div class="card green"><h3>Soft preferences</h3><p>Use when a placement is better, but alternatives are acceptable.</p><ul><li><code>preferredDuringSchedulingIgnoredDuringExecution</code></li><li>Topology spread preferences</li><li>Weighted affinity terms</li></ul></div>
+  </div>
+</div>
+<div id="sched-patterns" class="tabpanel">
+  <div class="matrix"><table><thead><tr><th>Requirement</th><th>Mechanism</th><th>Production caution</th></tr></thead><tbody>
+    <tr><td>Dedicated GPU/workload nodes</td><td>Taints + tolerations, usually paired with node affinity</td><td>A toleration permits placement; it does not force the pod onto that node.</td></tr>
+    <tr><td>Spread replicas across zones/nodes</td><td>Topology spread constraints or pod anti-affinity</td><td>Overly strict anti-affinity can create Pending pods during failure or scale-out.</td></tr>
+    <tr><td>Keep tightly-coupled workloads near each other</td><td>Pod affinity</td><td>Coupling can reduce resilience if all replicas share one failure domain.</td></tr>
+    <tr><td>Storage topology alignment</td><td><code>WaitForFirstConsumer</code> + CSI topology awareness</td><td>Immediate volume creation can select storage before pod placement is known.</td></tr>
+  </tbody></table></div>
+</div>
+<div id="sched-verify" class="tabpanel">
+<div class="codewrap"><button class="copybtn">Copy</button><pre><code>kubectl get pods -A -o wide
+kubectl describe pod &lt;pod&gt; -n &lt;namespace&gt;
+kubectl get nodes --show-labels
+kubectl describe node &lt;node&gt;
+kubectl get events -A --sort-by=.lastTimestamp | tail -n 40</code></pre></div>
+<p><strong>Evidence you want:</strong> the pod landed on an intended node, the event stream explains why, and the rules still allow acceptable placement when a node or zone becomes unavailable.</p>
+</div>
+</section>
+
+<section class="section" id="security">
+<h2>5. Outcome: secure workloads with ServiceAccounts and NetworkPolicies</h2>
+<p class="lead">Identity and connectivity should both be explicit. The secure target is not “no access”; it is <strong>only the access the workload needs</strong>.</p>
+<div class="grid2">
+  <div class="card violet"><h3>ServiceAccount = workload identity</h3><ul><li>Create purpose-specific ServiceAccounts.</li><li>Bind only the RBAC permissions required.</li><li>Avoid using the namespace <code>default</code> ServiceAccount for privileged application actions.</li><li>Disable automatic token mounting when the workload does not need Kubernetes API credentials.</li></ul></div>
+  <div class="card green"><h3>NetworkPolicy = allowed network relationships</h3><ul><li>Start from intended flows: who must call whom?</li><li>Understand that enforcement depends on a NetworkPolicy-capable CNI.</li><li>Default-deny patterns are useful only when required DNS, control, metrics and application flows are deliberately re-allowed.</li><li>Policies are additive: the allowed traffic is the union of applicable rules.</li></ul></div>
+</div>
+<details><summary>Secure workload example</summary><div class="details-body">
+<div class="codewrap"><button class="copybtn">Copy</button><pre><code>apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: api
+  namespace: prod
+automountServiceAccountToken: false
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: api-ingress
+  namespace: prod
+spec:
+  podSelector:
+    matchLabels:
+      app: api
+  policyTypes: [Ingress]
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          app: frontend
+    ports:
+    - protocol: TCP
+      port: 8080</code></pre></div>
+<div class="callout"><strong>Verify, do not assume:</strong> a valid NetworkPolicy object proves only that the API accepted it. Test the path from an allowed source and a denied source. Also verify your CNI actually enforces NetworkPolicy.</div>
+</div></details>
+</section>
+
+<section class="section" id="ingress">
+<h2>6. Outcome: expose services safely using Ingress</h2>
+<p class="lead">The earlier ingress traffic-management module focused on host/path routing, TLS and controller behavior. The closure skill is to trace the complete request path and identify the layer that owns each failure.</p>
+<div class="timeline">
+  <div class="titem"><span class="dot"></span><h3>1. Client resolves and connects</h3><p>DNS, IP reachability, load balancer/listener and TLS handshake must succeed before Kubernetes routing is relevant.</p></div>
+  <div class="titem"><span class="dot"></span><h3>2. Ingress rule matches</h3><p>Host, path and <code>pathType</code> determine the intended backend. The ingress controller implements the rule.</p></div>
+  <div class="titem"><span class="dot"></span><h3>3. Service selects endpoints</h3><p>The Service selector must match pods. Ready endpoint membership matters.</p></div>
+  <div class="titem"><span class="dot"></span><h3>4. Policy allows the flow</h3><p>If NetworkPolicy isolates a pod, required ingress/egress paths must be allowed.</p></div>
+  <div class="titem"><span class="dot"></span><h3>5. Application responds</h3><p>Container port, application bind address, protocol, readiness and backend latency complete the path.</p></div>
+</div>
+<div class="codewrap"><button class="copybtn">Copy</button><pre><code>kubectl get ingress -A
+kubectl describe ingress &lt;name&gt; -n &lt;namespace&gt;
+kubectl get svc,endpoints,endpointslices -n &lt;namespace&gt;
+kubectl get pods -n &lt;namespace&gt; -o wide
+kubectl logs -n &lt;ingress-controller-namespace&gt; deploy/&lt;controller-deployment&gt;</code></pre></div>
+</section>
+
+<section class="section" id="storage">
+<h2>7. Outcome: manage persistent storage reliably</h2>
+<p class="lead">Reliable persistence means understanding the whole binding and attachment chain, not merely seeing a PVC in <code>Bound</code> state.</p>
+<div class="matrix"><table><thead><tr><th>Layer</th><th>Question to answer</th><th>Typical evidence</th></tr></thead><tbody>
+<tr><td>StorageClass</td><td>Which provisioner and policy create the volume?</td><td><code>kubectl get sc -o yaml</code></td></tr>
+<tr><td>PVC</td><td>What capacity, access mode and class did the workload request?</td><td><code>kubectl describe pvc</code></td></tr>
+<tr><td>PV</td><td>What was actually provisioned and with what reclaim behavior?</td><td><code>kubectl get pv</code>, <code>describe pv</code></td></tr>
+<tr><td>CSI</td><td>Did provisioning, attachment and mount operations succeed?</td><td>Events + CSI controller/node plugin logs</td></tr>
+<tr><td>Pod</td><td>Did the volume mount at the expected path and is the application able to use it?</td><td><code>describe pod</code>, mount checks, application logs</td></tr>
+</tbody></table></div>
+<div class="callout"><strong>Failure-domain connection:</strong> storage and scheduling are coupled. A dynamically provisioned topology-aware volume may constrain where a pod can run. This is why <code>WaitForFirstConsumer</code> is important for many zonal/local storage systems.</div>
+</section>
+
+<section class="section" id="troubleshooting">
+<h2>8. Outcome: troubleshoot complex Kubernetes issues confidently</h2>
+<p class="lead">The most reusable troubleshooting method is evidence-driven narrowing. Start with object state and events before changing anything.</p>
+<div class="tabs" data-tabs="debug">
+<button class="tabbtn active" data-tab="d-pending">Pending</button>
+<button class="tabbtn" data-tab="d-network">Networking</button>
+<button class="tabbtn" data-tab="d-storage">Storage</button>
+<button class="tabbtn" data-tab="d-conflict">Scheduling conflict</button>
+</div>
+<div id="d-pending" class="tabpanel active"><div class="grid2"><div class="card red"><h3>First question</h3><p>Why did the scheduler not bind this pod?</p><div class="codewrap"><button class="copybtn">Copy</button><pre><code>kubectl describe pod &lt;pod&gt; -n &lt;ns&gt;
+kubectl get events -n &lt;ns&gt; --sort-by=.lastTimestamp</code></pre></div></div><div class="card"><h3>Common evidence</h3><ul><li>Insufficient CPU/memory</li><li>Untolerated taint</li><li>Node selector/affinity mismatch</li><li>Unbound PVC</li><li>Topology or anti-affinity conflict</li></ul></div></div></div>
+<div id="d-network" class="tabpanel"><div class="grid2"><div class="card red"><h3>Trace layer by layer</h3><p>DNS → Service selector → EndpointSlice → policy → pod listener → application.</p></div><div class="card"><h3>Useful checks</h3><div class="codewrap"><button class="copybtn">Copy</button><pre><code>kubectl get svc,endpointslices -n &lt;ns&gt;
+kubectl exec -n &lt;ns&gt; &lt;pod&gt; -- getent hosts &lt;service&gt;
+kubectl exec -n &lt;ns&gt; &lt;pod&gt; -- wget -S -O- http://&lt;service&gt;:&lt;port&gt;
+kubectl get networkpolicy -A</code></pre></div></div></div></div>
+<div id="d-storage" class="tabpanel"><div class="grid2"><div class="card red"><h3>Mount failure sequence</h3><p>Pod event → PVC state → PV state → StorageClass → CSI controller/node logs → node filesystem/device evidence.</p></div><div class="card"><h3>Do not skip</h3><p>Read the event text exactly. “Provisioning failed,” “attach failed,” and “mount failed” are different stages with different owners.</p></div></div></div>
+<div id="d-conflict" class="tabpanel"><div class="grid2"><div class="card red"><h3>Constraint collision</h3><p>A pod can satisfy each rule independently but fail when rules are combined: affinity + taints + resources + volume topology + anti-affinity.</p></div><div class="card"><h3>Technique</h3><p>List every hard scheduling constraint, then compare the intersection against real nodes. Remove or relax one condition only when the design permits it.</p></div></div></div>
+
+<details open><summary>Universal troubleshooting loop</summary><div class="details-body">
+<ol>
+<li><strong>State the symptom precisely.</strong> “Pod Pending for 6 minutes” is better than “deployment broken.”</li>
+<li><strong>Identify the responsible object.</strong> Pod? Service? Ingress? PVC? Node?</li>
+<li><strong>Inspect current state.</strong> <code>get</code> and <code>describe</code>.</li>
+<li><strong>Read events.</strong> Kubernetes often tells you which control-plane decision failed.</li>
+<li><strong>Trace dependencies outward.</strong> Selector, ServiceAccount, policy, PVC, CSI, node, DNS, CNI.</li>
+<li><strong>Change one thing.</strong> Avoid simultaneous fixes that destroy evidence.</li>
+<li><strong>Verify recovery and intended behavior.</strong> “Running” is not the same as “correct.”</li>
+</ol>
+</div></details>
+</section>
+
+
+<section class="section" id="incident">
+<h2>9. Integrated production incident simulation</h2>
+<p class="lead">This exercise deliberately mixes multiple layers. Work from evidence; do not jump to the apparent symptom.</p>
+<div class="scenario-grid">
+  <div>
+    <div class="callout red"><strong>Incident:</strong> users report intermittent <code>503 Service Unavailable</code> from <code>https://shop.example.com/api</code>. A rollout completed 10 minutes ago.</div>
+    <div class="stepper" id="incidentSteps">
+      <div class="step-card active" data-step="0"><strong>Step 1 — Observe</strong><small>Ingress reports backend unavailable.</small></div>
+      <div class="step-card" data-step="1"><strong>Step 2 — Check endpoints</strong><small>The Service has zero ready endpoints.</small></div>
+      <div class="step-card" data-step="2"><strong>Step 3 — Inspect pods</strong><small>One pod is Running but NotReady; another is Pending.</small></div>
+      <div class="step-card" data-step="3"><strong>Step 4 — Split the problem</strong><small>Readiness failure on one replica; scheduling/storage conflict on the other.</small></div>
+      <div class="step-card" data-step="4"><strong>Step 5 — Recover and verify</strong><small>Fix probe target and restore satisfiable storage-aware placement.</small></div>
+    </div>
+  </div>
+  <div>
+    <div class="incident-console" id="incidentConsole"># Step 1
+curl -I https://shop.example.com/api
+HTTP/2 503
+
+kubectl describe ingress shop -n prod
+# Rule matches /api and points to service api:8080
+
+Conclusion:
+The client reaches the ingress controller. Do not debug DNS first.</div>
+  </div>
+</div>
+<div class="trainer-only callout"><strong>Trainer prompt:</strong> ask learners to name the next object they would inspect before revealing the next step. Require a reason, not just a command.</div>
+</section>
+
+<section class="section" id="decisiontree">
+<h2>10. Interactive troubleshooting decision tree</h2>
+<p class="lead">Click the stage that best matches the current symptom. The objective is to move from broad symptom to the smallest responsible layer.</p>
+<div class="tree-wrap">
+<svg viewBox="0 0 1120 520" width="100%" role="img" aria-label="Kubernetes troubleshooting decision tree">
+  <defs><marker id="ta" markerWidth="9" markerHeight="9" refX="8" refY="3" orient="auto"><path d="M0 0 L0 6 L9 3z" fill="var(--cyan)"/></marker></defs>
+  <g stroke="var(--cyan)" stroke-width="2" fill="none" marker-end="url(#ta)">
+    <path d="M160 95 H310"/><path d="M470 95 H620"/><path d="M780 95 H930"/>
+    <path d="M390 135 V255 H280"/><path d="M700 135 V255 H610"/><path d="M1010 135 V255 H930"/>
+  </g>
+  <g class="tree-node" data-tree="scheduled"><rect x="20" y="55" width="140" height="80" rx="14" fill="var(--panel)" stroke="var(--red)" stroke-width="2"/><text x="90" y="88" text-anchor="middle" fill="var(--text)" font-weight="800">Pod scheduled?</text><text x="90" y="110" text-anchor="middle" fill="var(--muted)" font-size="12">Pending?</text></g>
+  <g class="tree-node" data-tree="running"><rect x="310" y="55" width="160" height="80" rx="14" fill="var(--panel)" stroke="var(--amber)" stroke-width="2"/><text x="390" y="88" text-anchor="middle" fill="var(--text)" font-weight="800">Container running?</text><text x="390" y="110" text-anchor="middle" fill="var(--muted)" font-size="12">CrashLoop / image?</text></g>
+  <g class="tree-node" data-tree="ready"><rect x="620" y="55" width="160" height="80" rx="14" fill="var(--panel)" stroke="var(--green)" stroke-width="2"/><text x="700" y="88" text-anchor="middle" fill="var(--text)" font-weight="800">Pod Ready?</text><text x="700" y="110" text-anchor="middle" fill="var(--muted)" font-size="12">Probe / dependency?</text></g>
+  <g class="tree-node" data-tree="service"><rect x="930" y="55" width="160" height="80" rx="14" fill="var(--panel)" stroke="var(--cyan)" stroke-width="2"/><text x="1010" y="88" text-anchor="middle" fill="var(--text)" font-weight="800">Service path works?</text><text x="1010" y="110" text-anchor="middle" fill="var(--muted)" font-size="12">Selector / EndpointSlice?</text></g>
+  <g class="tree-node" data-tree="schedulefail"><rect x="175" y="255" width="210" height="90" rx="14" fill="var(--panel)" stroke="var(--red)" stroke-width="2"/><text x="280" y="290" text-anchor="middle" fill="var(--text)" font-weight="800">Scheduling constraints</text><text x="280" y="315" text-anchor="middle" fill="var(--muted)" font-size="12">resources • taints • affinity • PVC</text></g>
+  <g class="tree-node" data-tree="probefail"><rect x="505" y="255" width="210" height="90" rx="14" fill="var(--panel)" stroke="var(--amber)" stroke-width="2"/><text x="610" y="290" text-anchor="middle" fill="var(--text)" font-weight="800">Health/dependency</text><text x="610" y="315" text-anchor="middle" fill="var(--muted)" font-size="12">readiness • app • storage</text></g>
+  <g class="tree-node" data-tree="network"><rect x="825" y="255" width="210" height="90" rx="14" fill="var(--panel)" stroke="var(--violet)" stroke-width="2"/><text x="930" y="290" text-anchor="middle" fill="var(--text)" font-weight="800">Network / ingress</text><text x="930" y="315" text-anchor="middle" fill="var(--muted)" font-size="12">DNS • policy • ingress • app</text></g>
+</svg>
+</div>
+<div class="tree-result" id="treeResult"><strong>Start with the current observable state.</strong><br>Select a node above for the first evidence to collect.</div>
+</section>
+
+<section class="section" id="failurelabs">
+<h2>11. Safe failure-injection mini-labs</h2>
+<p class="lead">These labs intentionally break a small part of a workload so trainees practice diagnosis and recovery. Use a disposable namespace, never a production namespace.</p>
+<div class="callout"><strong>Lab safety:</strong> set a dedicated namespace first, e.g. <code>export NS=closure-lab</code>. Delete it after the exercises with <code>kubectl delete ns "$NS"</code>.</div>
+
+<div class="lab-card">
+<div class="lab-meta"><span class="tag badge-danger">Failure injection</span><span class="tag badge-prereq">Requires working cluster</span></div>
+<h3>Lab A — Break a readiness probe</h3>
+<p><strong>Goal:</strong> prove that a Running pod can be removed from Service endpoints when readiness fails.</p>
+<div class="codewrap"><button class="copybtn">Copy</button><pre><code>export NS=closure-lab
+kubectl create ns "$NS" --dry-run=client -o yaml | kubectl apply -f -
+
+kubectl -n "$NS" create deployment web --image=nginx:1.27
+kubectl -n "$NS" expose deployment web --port=80
+
+kubectl -n "$NS" patch deployment web --type='json' -p='[
+  {"op":"add","path":"/spec/template/spec/containers/0/readinessProbe",
+   "value":{"httpGet":{"path":"/does-not-exist","port":80},
+            "initialDelaySeconds":2,"periodSeconds":3}}
+]'
+
+kubectl -n "$NS" get pods -w
+kubectl -n "$NS" get endpointslices -l kubernetes.io/service-name=web</code></pre></div>
+<p class="learner-answer"><strong>Expected reasoning:</strong> container remains Running, readiness fails, and the pod is not considered a ready backend for normal Service traffic. Recover by changing the probe path to <code>/</code> or removing the intentionally broken probe.</p>
+</div>
+
+<div class="lab-card">
+<div class="lab-meta"><span class="tag badge-danger">Failure injection</span><span class="tag badge-prod">Scheduling</span></div>
+<h3>Lab B — Create an unschedulable pod</h3>
+<p><strong>Goal:</strong> diagnose a Pending pod caused by an impossible node selector.</p>
+<div class="codewrap"><button class="copybtn">Copy</button><pre><code>cat &lt;&lt;'EOF' | kubectl apply -n "$NS" -f -
+apiVersion: v1
+kind: Pod
+metadata:
+  name: impossible-placement
+spec:
+  nodeSelector:
+    closure.lab/nonexistent: "true"
+  containers:
+  - name: pause
+    image: registry.k8s.io/pause:3.10
+EOF
+
+kubectl -n "$NS" describe pod impossible-placement
+kubectl get nodes --show-labels</code></pre></div>
+<p class="learner-answer"><strong>Expected reasoning:</strong> the scheduler cannot find a node satisfying the hard selector. The correct fix is to change the intended placement rule or label an appropriate node only if that reflects the real design.</p>
+</div>
+
+<div class="lab-card">
+<div class="lab-meta"><span class="tag badge-danger">Failure injection</span><span class="tag badge-prod">Service routing</span></div>
+<h3>Lab C — Break the Service selector</h3>
+<p><strong>Goal:</strong> separate a healthy workload from a broken Service-to-Pod relationship.</p>
+<div class="codewrap"><button class="copybtn">Copy</button><pre><code>kubectl -n "$NS" patch service web --type='merge' -p \
+'{"spec":{"selector":{"app":"wrong-label"}}}'
+
+kubectl -n "$NS" get svc web -o yaml
+kubectl -n "$NS" get endpointslices -l kubernetes.io/service-name=web
+kubectl -n "$NS" get pods --show-labels
+
+# Recover:
+kubectl -n "$NS" patch service web --type='merge' -p \
+'{"spec":{"selector":{"app":"web"}}}'</code></pre></div>
+<p class="learner-answer"><strong>Expected reasoning:</strong> the application pods can be healthy while the Service has no matching endpoints. Always compare Service selectors with real pod labels.</p>
+</div>
+</section>
+
+<section class="section" id="commands">
+<h2>9. Command field kit</h2>
+<p class="lead">Select a symptom to reveal a compact first-response command set.</p>
+<div class="command-map">
+<button data-cmd="pending"><strong>Pod Pending</strong><small>Scheduler, resources, taints, affinity, PVC</small></button>
+<button data-cmd="crash"><strong>CrashLoopBackOff</strong><small>Logs, previous logs, probes, command</small></button>
+<button data-cmd="ingress"><strong>Ingress 404/503</strong><small>Rules, Service, endpoints, controller</small></button>
+<button data-cmd="dns"><strong>DNS / Service failure</strong><small>Resolution, endpoints, policy</small></button>
+<button data-cmd="storage"><strong>Mount / attach failure</strong><small>PVC, PV, events, CSI</small></button>
+<button data-cmd="auth"><strong>Forbidden / API access</strong><small>ServiceAccount, RBAC, auth can-i</small></button>
+</div>
+<div id="cmdOutput" class="codewrap" style="margin-top:1rem"><button class="copybtn">Copy</button><pre><code># Choose a symptom above to populate this field kit.</code></pre></div>
+</section>
+
+<section class="section" id="readiness">
+<h2>10. Production-readiness checklist</h2>
+<p class="lead">Use this as a closure exercise. A checked item means you can both explain and verify it.</p>
+<div class="grid2">
+<div class="card checklist">
+<h3>Design & security</h3>
+<label><input type="checkbox">I can explain every hard scheduling constraint and its failure behavior.</label>
+<label><input type="checkbox">I know which workloads need Kubernetes API credentials and which do not.</label>
+<label><input type="checkbox">I can map required east-west and north-south traffic before writing NetworkPolicies.</label>
+<label><input type="checkbox">I understand which component implements my Ingress resources.</label>
+<label><input type="checkbox">I can justify StorageClass binding and reclaim choices.</label>
+</div>
+<div class="card checklist">
+<h3>Operations & troubleshooting</h3>
+<label><input type="checkbox">I inspect events before making disruptive changes.</label>
+<label><input type="checkbox">I can explain why a Service has zero ready endpoints.</label>
+<label><input type="checkbox">I can distinguish provisioning, attachment and mount failures.</label>
+<label><input type="checkbox">I can trace a request from client to ingress to Service to Pod.</label>
+<label><input type="checkbox">I can reproduce a problem with a minimal test pod or request.</label>
+</div>
+</div>
+<div style="margin-top:1rem"><div style="display:flex;justify-content:space-between"><strong>Readiness confidence</strong><span id="readyText">0 / 10</span></div><div class="meter"><span id="readyMeter"></span></div></div>
+</section>
+
+<section class="section" id="assessment">
+<h2>11. Final confidence assessment</h2>
+<p class="lead">This is deliberately scenario-based. The goal is to test reasoning across topic boundaries.</p>
+<div id="quiz">
+<div class="quizq" data-answer="b"><p>1. A Deployment has 3 replicas, but one replica remains Pending. The event says the pod has an untolerated taint. What is the most direct interpretation?</p>
+<label><input type="radio" name="q1" value="a"> The Service selector is wrong.</label>
+<label><input type="radio" name="q1" value="b"> Candidate nodes are tainted and the pod lacks a matching toleration.</label>
+<label><input type="radio" name="q1" value="c"> The readiness probe is failing.</label>
+</div>
+<div class="quizq" data-answer="c"><p>2. An Ingress returns 503 and the backing Service has zero ready endpoints. Which layer should you inspect next?</p>
+<label><input type="radio" name="q2" value="a"> Browser cache only.</label>
+<label><input type="radio" name="q2" value="b"> StorageClass reclaim policy first.</label>
+<label><input type="radio" name="q2" value="c"> Pod readiness, labels/selectors and endpoint membership.</label>
+</div>
+<div class="quizq" data-answer="a"><p>3. A workload does not need to call the Kubernetes API. Which design is generally safer?</p>
+<label><input type="radio" name="q3" value="a"> Use a dedicated ServiceAccount and disable automatic token mounting.</label>
+<label><input type="radio" name="q3" value="b"> Bind cluster-admin to the default ServiceAccount.</label>
+<label><input type="radio" name="q3" value="c"> Run the container as root so API access works.</label>
+</div>
+<div class="quizq" data-answer="b"><p>4. A PVC using zonal storage is created before the scheduler chooses a node, and the selected volume lands in an unusable zone. Which StorageClass setting often avoids this class of problem?</p>
+<label><input type="radio" name="q4" value="a"> reclaimPolicy: Retain</label>
+<label><input type="radio" name="q4" value="b"> volumeBindingMode: WaitForFirstConsumer</label>
+<label><input type="radio" name="q4" value="c"> allowVolumeExpansion: true</label>
+</div>
+<div class="quizq" data-answer="c"><p>5. A NetworkPolicy object exists but traffic is still unrestricted. What important dependency should be verified?</p>
+<label><input type="radio" name="q5" value="a"> Whether the Pod has a readiness probe.</label>
+<label><input type="radio" name="q5" value="b"> Whether the Service is type ClusterIP.</label>
+<label><input type="radio" name="q5" value="c"> Whether the installed CNI enforces Kubernetes NetworkPolicy.</label>
+</div>
+<button class="pillbtn" id="gradeQuiz">Grade assessment</button>
+<div class="quizresult" id="quizResult"></div>
+</div>
+</section>
+
+
+<section class="section" id="capstone">
+<h2>15. Final capstone — defend a production workload design</h2>
+<p class="lead">Use this as the final practical closure exercise. The objective is not to produce the largest YAML file; it is to make defensible operational choices.</p>
+<div class="grid2">
+<div class="card">
+<h3>Scenario</h3>
+<p>You operate a three-tier application: public frontend, internal API and PostgreSQL-like stateful datastore. The cluster spans multiple worker nodes and uses a NetworkPolicy-capable CNI plus a CSI driver.</p>
+<ol class="capstone-task">
+<li>Place API replicas across failure domains without making rescheduling impossible.</li>
+<li>Give each tier an appropriate ServiceAccount and justify API token mounting.</li>
+<li>Allow frontend → API and API → database traffic while blocking unrelated paths.</li>
+<li>Expose only the frontend through Ingress with TLS.</li>
+<li>Define readiness/liveness/startup behavior suitable for each tier.</li>
+<li>Choose storage binding and reclaim behavior for the stateful tier.</li>
+<li>Write a five-step first-response runbook for an HTTP 503.</li>
+<li>Define the evidence that proves the deployment is production-ready.</li>
+</ol>
+</div>
+<div class="card green">
+<h3>What a strong answer demonstrates</h3>
+<ul>
+<li>Hard vs soft scheduling constraints are distinguished.</li>
+<li>Security is based on least privilege, not convenience.</li>
+<li>Network intent is documented before policy YAML.</li>
+<li>Ingress, Service and readiness dependencies are understood.</li>
+<li>Storage and scheduling topology are considered together.</li>
+<li>Troubleshooting starts with evidence and narrows systematically.</li>
+</ul>
+</div>
+</div>
+<details><summary>Reference solution outline — reveal after attempting</summary><div class="details-body learner-answer">
+<ul>
+<li><strong>Scheduling:</strong> topology spread or preferred anti-affinity across hostname/zone; avoid unnecessary hard anti-affinity.</li>
+<li><strong>Identity:</strong> dedicated ServiceAccounts; disable automount where Kubernetes API access is unnecessary; bind minimal RBAC only where needed.</li>
+<li><strong>Network:</strong> default-deny-compatible policy design, then explicit frontend→API and API→database allowances plus required DNS/operational traffic.</li>
+<li><strong>Ingress:</strong> frontend only; TLS configured; backend Service verified to have ready endpoints.</li>
+<li><strong>Health:</strong> readiness represents traffic eligibility; liveness detects unrecoverable process failure; startup probes protect slow initialization.</li>
+<li><strong>Storage:</strong> CSI-backed class appropriate to workload topology, commonly <code>WaitForFirstConsumer</code> for topology-sensitive dynamic provisioning; deliberate reclaim policy.</li>
+<li><strong>503 runbook:</strong> ingress rule/controller → Service selector → EndpointSlice → pod readiness → NetworkPolicy/application.</li>
+<li><strong>Verification:</strong> placement, identities, endpoint membership, allowed/denied traffic tests, TLS path, PVC/PV state, failure drill and recovery evidence.</li>
+</ul>
+</div></details>
+</section>
+
+<section class="section" id="next">
+<h2>12. What comes next</h2>
+<p class="lead">This module closes the feature-oriented learning sequence. The next progression should move from individual controls to cluster operations and reliability engineering.</p>
+<div class="grid3">
+<div class="card"><h3>Observability</h3><p>Metrics, logs, traces, events, SLOs, Prometheus/Grafana, alert design and workload-level golden signals.</p></div>
+<div class="card green"><h3>Resilience engineering</h3><p>PodDisruptionBudgets, graceful termination, rollout strategy, autoscaling, capacity planning, node maintenance and failure drills.</p></div>
+<div class="card violet"><h3>Platform operations</h3><p>Admission control, policy engines, supply-chain security, GitOps, backup/restore, upgrade planning and multi-tenant guardrails.</p></div>
+</div>
+<div class="success callout"><strong>Closure challenge:</strong> take one real application and document its scheduling rules, ServiceAccount/RBAC, NetworkPolicies, Ingress path, probes, storage dependencies and a five-step troubleshooting runbook. If you can defend those choices and verify them in-cluster, the training outcomes have become operational skill.</div>
+</section>
+
+<div class="footer">Standalone self-study reference • Kubernetes Operations Training • Module 8 — Closure & Outcomes • v1.1</div>
+</main>
+</div>
+
+<div class="coach" id="coach">
+  <div class="coach-head">
+    <strong>Learning Coach</strong><span class="mode-badge" id="coachSection">Overview</span>
+    <button class="iconbtn" id="coachMin" title="Minimize coach">−</button>
+  </div>
+  <div class="coach-body">
+    <div class="coach-output" id="coachOutput">Use the controls below to explain the section currently visible on screen.</div>
+    <div class="coach-actions">
+      <button data-coach="simple">Explain simply</button>
+      <button data-coach="why">Why it matters</button>
+      <button data-coach="scenario">Give scenario</button>
+      <button data-coach="question">Ask me a question</button>
+      <button data-coach="repeat">Repeat key point</button>
+      <button class="coach-stop" data-coach="stop">Stop / clear</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast" role="status" aria-live="polite">Copied</div>
+
+<script>
+const $=(s,c=document)=>c.querySelector(s), $$=(s,c=document)=>[...c.querySelectorAll(s)];
+const toast=(msg)=>{const t=$("#toast");t.textContent=msg;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),1200)};
+$("#themeBtn").addEventListener("click",()=>{const h=document.documentElement;h.dataset.theme=h.dataset.theme==="dark"?"light":"dark";localStorage.setItem("k8sClosureTheme",h.dataset.theme)});
+const saved=localStorage.getItem("k8sClosureTheme"); if(saved) document.documentElement.dataset.theme=saved;
+$$(".copybtn").forEach(b=>b.addEventListener("click",()=>{const code=b.parentElement.querySelector("code").innerText;navigator.clipboard.writeText(code).then(()=>toast("Copied to clipboard"))}));
+$$("[data-tabs]").forEach(group=>{group.addEventListener("click",e=>{const b=e.target.closest(".tabbtn");if(!b)return;const sec=group.parentElement;$$(".tabbtn",group).forEach(x=>x.classList.remove("active"));b.classList.add("active");$$(".tabpanel",sec).forEach(p=>p.classList.remove("active"));$("#"+b.dataset.tab).classList.add("active")})});
+$("#expandAll").addEventListener("click",()=>{$$("details").forEach(d=>d.open=true);toast("Expandable sections opened")});
+const readyChecks=$$(".checklist input");function updateReady(){const n=readyChecks.filter(c=>c.checked).length;$("#readyText").textContent=n+" / "+readyChecks.length;$("#readyMeter").style.width=(100*n/readyChecks.length)+"%";localStorage.setItem("k8sClosureReady",JSON.stringify(readyChecks.map(c=>c.checked)))}readyChecks.forEach(c=>c.addEventListener("change",updateReady));
+try{const st=JSON.parse(localStorage.getItem("k8sClosureReady")||"[]");st.forEach((v,i)=>{if(readyChecks[i])readyChecks[i].checked=v});updateReady()}catch(e){}
+const kits={
+pending:`kubectl get pod <pod> -n <ns> -o wide
+kubectl describe pod <pod> -n <ns>
+kubectl get events -n <ns> --sort-by=.lastTimestamp
+kubectl get nodes --show-labels
+kubectl describe node <candidate-node>
+kubectl get pvc -n <ns>`,
+crash:`kubectl get pod <pod> -n <ns>
+kubectl describe pod <pod> -n <ns>
+kubectl logs <pod> -n <ns> --all-containers
+kubectl logs <pod> -n <ns> --previous
+kubectl get pod <pod> -n <ns> -o yaml`,
+ingress:`kubectl get ingress -n <ns>
+kubectl describe ingress <ingress> -n <ns>
+kubectl get svc,endpoints,endpointslices -n <ns>
+kubectl get pods -n <ns> -o wide
+kubectl logs -n <controller-ns> deploy/<controller>`,
+dns:`kubectl get svc,endpointslices -n <ns>
+kubectl exec -n <ns> <pod> -- cat /etc/resolv.conf
+kubectl exec -n <ns> <pod> -- getent hosts <service>
+kubectl get pods -n kube-system
+kubectl get networkpolicy -A`,
+storage:`kubectl describe pod <pod> -n <ns>
+kubectl get pvc -n <ns>
+kubectl describe pvc <pvc> -n <ns>
+kubectl get pv
+kubectl get storageclass
+kubectl get events -n <ns> --sort-by=.lastTimestamp`,
+auth:`kubectl get pod <pod> -n <ns> -o jsonpath='{.spec.serviceAccountName}{"\\n"}'
+kubectl get sa -n <ns>
+kubectl auth can-i --as=system:serviceaccount:<ns>:<sa> <verb> <resource> -n <ns>
+kubectl get role,rolebinding -n <ns>
+kubectl get clusterrole,clusterrolebinding`
+};
+$$("[data-cmd]").forEach(b=>b.addEventListener("click",()=>{$("#cmdOutput code").textContent=kits[b.dataset.cmd];$("#cmdOutput").scrollIntoView({behavior:"smooth",block:"center"})}));
+$("#gradeQuiz").addEventListener("click",()=>{let score=0, answered=0;$$(".quizq").forEach((q,i)=>{const pick=$(`input[name=q${i+1}]:checked`,q);if(pick){answered++;if(pick.value===q.dataset.answer)score++}});const pct=Math.round(score/$$(".quizq").length*100);const r=$("#quizResult");r.style.display="block";r.innerHTML=`<strong>Score: ${score}/${$$(".quizq").length} (${pct}%)</strong><br>${answered<5?"Answer every scenario for a complete result. ":""}${pct>=80?"Strong closure result. Focus next on integrated failure drills and production runbooks.":pct>=60?"Good foundation. Revisit the scenarios you missed and trace the relevant control path.":"Revisit the outcome sections before repeating the assessment; focus on cause-and-effect, not memorization."}`});
+function onScroll(){const max=document.documentElement.scrollHeight-innerHeight;$("#progressBar").style.width=(max>0?scrollY/max*100:0)+"%";let cur="";$$("main section[id]").forEach(s=>{if(s.getBoundingClientRect().top<150)cur=s.id});$$(".navlink").forEach(a=>a.classList.toggle("active",a.getAttribute("href")==="#"+cur))}addEventListener("scroll",onScroll,{passive:true});onScroll();
+
+// v1.1 trainer/learner mode
+let trainerMode=false;
+$("#modeBtn").addEventListener("click",()=>{
+  trainerMode=!trainerMode;
+  document.body.classList.toggle("trainer-mode",trainerMode);
+  $("#modeBtn .label").textContent=trainerMode?"Trainer mode":"Learner mode";
+  toast(trainerMode?"Trainer mode: answers obscured":"Learner mode: answers visible");
+});
+$$(".learner-answer").forEach(el=>el.addEventListener("click",()=>{if(trainerMode)el.classList.toggle("revealed")}));
+
+// Integrated incident simulation
+const incidentData=[
+`# Step 1 — Observe
+curl -I https://shop.example.com/api
+HTTP/2 503
+
+kubectl describe ingress shop -n prod
+# Rule matches /api and points to service api:8080
+
+Conclusion:
+The client reaches the ingress controller. Do not debug DNS first.`,
+`# Step 2 — Check service endpoints
+kubectl get svc api -n prod
+kubectl get endpointslices -n prod \
+  -l kubernetes.io/service-name=api
+
+# Result: zero ready endpoints
+
+Conclusion:
+Ingress routing exists, but the Service currently has no ready backend.`,
+`# Step 3 — Inspect pods
+kubectl get pods -n prod -l app=api -o wide
+
+api-7c9...   0/1   Running   ...
+api-b4d...   0/1   Pending   ...
+
+kubectl describe pod api-7c9... -n prod
+# Readiness probe: HTTP 404
+
+kubectl describe pod api-b4d... -n prod
+# FailedScheduling + volume topology/placement constraint`,
+`# Step 4 — Split the problem
+
+Replica A:
+- Process is running.
+- Readiness target is wrong after rollout.
+- NotReady => excluded from ready Service endpoints.
+
+Replica B:
+- Scheduler cannot satisfy placement together with storage topology.
+
+Treat them as two failures, not one vague "Ingress issue".`,
+`# Step 5 — Recover and verify
+
+1. Correct readiness path/port.
+2. Restore satisfiable scheduling/storage relationship.
+3. Wait for Ready=True.
+4. Verify EndpointSlice contains backends.
+5. Re-test through Ingress.
+6. Confirm events stop reporting new failures.
+
+Success criteria:
+HTTP success + ready endpoints + intended placement + no recurring warning events.`
+];
+$$("#incidentSteps .step-card").forEach(c=>c.addEventListener("click",()=>{
+  $$("#incidentSteps .step-card").forEach(x=>x.classList.remove("active"));
+  c.classList.add("active");
+  $("#incidentConsole").textContent=incidentData[+c.dataset.step];
+}));
+
+// Decision tree
+const treeHelp={
+scheduled:["Pod scheduling","Run: kubectl describe pod <pod> -n <ns>\\nLook for FailedScheduling events. Check resource requests, taints/tolerations, node selectors/affinity and unbound PVCs."],
+running:["Container lifecycle","Inspect image pull status, exit codes and current/previous logs. Distinguish ImagePullBackOff, CrashLoopBackOff and application exits."],
+ready:["Readiness","A Running pod is not necessarily traffic-ready. Inspect readiness probe events, dependency reachability and application health."],
+service:["Service reachability","Compare Service selectors with pod labels, then inspect EndpointSlices. If endpoints exist, test DNS, policy and the target port."],
+schedulefail:["Constraint intersection","List every hard placement condition and compare their intersection with actual nodes. Storage topology may also constrain placement."],
+probefail:["Health/dependency path","Inspect probe path/port/protocol, application bind address, startup timing and dependencies such as storage or downstream services."],
+network:["Network/Ingress path","Trace DNS → ingress/controller → Service → EndpointSlice → NetworkPolicy → pod listener. Test each boundary independently."]
+};
+$$(".tree-node").forEach(n=>n.addEventListener("click",()=>{
+  const [t,b]=treeHelp[n.dataset.tree];
+  $("#treeResult").innerHTML=`<strong>${t}</strong><br>${b.replaceAll("\\n","<br>")}`;
+}));
+
+// Floating coach
+const coachMap={
+overview:{
+simple:"This module joins several Kubernetes controls into one operational model: placement, identity, traffic, health, storage and troubleshooting.",
+why:"Production failures cross boundaries. Knowing one object in isolation is not enough when symptoms appear several layers away from the cause.",
+scenario:"A 503 can originate from ingress routing, zero ready endpoints, probe failure, scheduling failure or storage startup problems.",
+question:"Can you name the sequence you would inspect for an HTTP 503 without changing anything first?"
+},
+scheduling:{
+simple:"Scheduling rules tell Kubernetes where a pod may or should run. Hard rules reject invalid nodes; soft rules express preferences.",
+why:"Over-constraining scheduling can turn a healthy cluster into one where workloads cannot be placed during node or zone failures.",
+scenario:"A database pod needs zonal storage while anti-affinity and a node label narrow placement to one unavailable node.",
+question:"What is the difference between a toleration and a rule that actually attracts a pod to a node?"
+},
+security:{
+simple:"ServiceAccounts control workload identity; RBAC controls what that identity may do; NetworkPolicy controls allowed network relationships.",
+why:"Least privilege limits blast radius if a pod or credential is compromised.",
+scenario:"A frontend should call only the API, but currently every pod in the namespace can reach the database.",
+question:"Why is creating a NetworkPolicy object alone not enough to prove traffic is restricted?"
+},
+ingress:{
+simple:"Ingress is one stage in the request path. The controller routes to a Service, which then depends on ready endpoints.",
+why:"An ingress error can actually be caused by a backend readiness or selector problem.",
+scenario:"TLS succeeds and the host/path rule matches, but the Service has no ready EndpointSlices.",
+question:"After proving the ingress rule matches, which Kubernetes object would you inspect next?"
+},
+storage:{
+simple:"PVCs request storage, PVs represent provisioned storage, StorageClasses define provisioning policy, and CSI performs the operations.",
+why:"Storage topology can directly affect where pods are allowed to run.",
+scenario:"A volume is created in zone A, but the pod's hard affinity requires zone B.",
+question:"Why can WaitForFirstConsumer help with topology-sensitive storage?"
+},
+troubleshooting:{
+simple:"Troubleshooting should narrow the failure using state, events and dependencies before making changes.",
+why:"Random restarts can destroy evidence and create new symptoms.",
+scenario:"One pod is Pending, another is NotReady, and ingress shows 503. Separate these into independent evidence paths.",
+question:"What is the first reason to inspect events before restarting a workload?"
+}
+};
+let lastCoach="";
+function activeSectionId(){let cur="overview";$$("main section[id]").forEach(s=>{if(s.getBoundingClientRect().top<180)cur=s.id});return cur}
+function coachText(action){
+  const id=activeSectionId();
+  const key=coachMap[id]?id:(["incident","decisiontree","failurelabs","commands","readiness","assessment","capstone"].includes(id)?"troubleshooting":"overview");
+  const item=coachMap[key];
+  $("#coachSection").textContent=id;
+  if(action==="stop"){lastCoach="";return "Coach output cleared."}
+  if(action==="repeat") return lastCoach||item.simple;
+  lastCoach=item[action]||item.simple;
+  return lastCoach;
+}
+$$("[data-coach]").forEach(b=>b.addEventListener("click",()=>$("#coachOutput").textContent=coachText(b.dataset.coach)));
+$("#coachMin").addEventListener("click",()=>{$("#coach").classList.toggle("min");$("#coachMin").textContent=$("#coach").classList.contains("min")?"+":"−"});
+addEventListener("scroll",()=>{$("#coachSection").textContent=activeSectionId()},{passive:true});
+
+</script>
+</body>
+</html>
