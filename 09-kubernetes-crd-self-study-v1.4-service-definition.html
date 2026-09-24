@@ -1,0 +1,1380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="dark light">
+<title>Kubernetes CRDs — Custom Resource Definitions | Self‑Study Field Guide</title>
+<style>
+:root{
+  --bg:#08111f;--panel:#0d1b2d;--panel2:#10243b;--text:#e8f0fb;--muted:#9db0c7;
+  --accent:#5eead4;--accent2:#60a5fa;--warn:#fbbf24;--bad:#fb7185;--ok:#34d399;
+  --code:#07101c;--line:#20344d;--shadow:0 18px 50px rgba(0,0,0,.25);
+}
+[data-theme="light"]{
+  --bg:#f3f7fb;--panel:#fff;--panel2:#eef5fb;--text:#112034;--muted:#52657a;
+  --accent:#0f766e;--accent2:#2563eb;--warn:#a16207;--bad:#be123c;--ok:#047857;
+  --code:#f7fafc;--line:#cad8e6;--shadow:0 18px 50px rgba(30,64,175,.08);
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:radial-gradient(circle at 12% 5%,rgba(96,165,250,.12),transparent 27%),var(--bg);color:var(--text);font:16px/1.62 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
+a{color:var(--accent2)}
+button,input{font:inherit}
+.topbar{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:10px;padding:10px 18px;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}
+.brand{font-weight:800;letter-spacing:.2px;margin-right:auto}
+.btn{border:1px solid var(--line);background:var(--panel);color:var(--text);padding:8px 11px;border-radius:10px;cursor:pointer}
+.btn:hover{border-color:var(--accent2)}
+.progress{height:3px;position:fixed;top:0;left:0;background:linear-gradient(90deg,var(--accent),var(--accent2));width:0;z-index:50}
+.shell{display:grid;grid-template-columns:280px minmax(0,1fr);max-width:1500px;margin:auto}
+aside{position:sticky;top:58px;height:calc(100vh - 58px);overflow:auto;padding:22px 16px;border-right:1px solid var(--line)}
+aside input{width:100%;background:var(--panel);border:1px solid var(--line);color:var(--text);padding:10px;border-radius:10px}
+nav a{display:block;padding:7px 9px;margin:3px 0;border-radius:8px;color:var(--muted);text-decoration:none}
+nav a:hover,nav a.active{background:var(--panel2);color:var(--text)}
+main{min-width:0;padding:32px clamp(18px,4vw,58px) 80px}
+.hero{padding:34px;border:1px solid var(--line);border-radius:24px;background:linear-gradient(135deg,color-mix(in srgb,var(--panel) 92%,var(--accent2)),var(--panel));box-shadow:var(--shadow)}
+.eyebrow{color:var(--accent);font-weight:800;text-transform:uppercase;font-size:.78rem;letter-spacing:.12em}
+h1{font-size:clamp(2.1rem,5vw,4.4rem);line-height:1.04;margin:.25em 0}
+h2{margin-top:2.2em;padding-top:.6em;border-top:1px solid var(--line);font-size:2rem}
+h3{margin-top:1.6em}
+.lede{font-size:1.14rem;color:var(--muted);max-width:950px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}.chip{border:1px solid var(--line);padding:5px 9px;border-radius:999px;background:var(--panel)}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px;box-shadow:var(--shadow)}
+.callout{border-left:4px solid var(--accent2);padding:14px 16px;background:var(--panel);border-radius:10px;margin:18px 0}
+.callout.warn{border-left-color:var(--warn)}.callout.bad{border-left-color:var(--bad)}.callout.ok{border-left-color:var(--ok)}
+.assumption{display:inline-block;color:var(--warn);font-weight:800;font-size:.8rem;border:1px solid currentColor;padding:2px 7px;border-radius:999px}
+pre{position:relative;background:var(--code);border:1px solid var(--line);border-radius:14px;padding:18px;overflow:auto;white-space:pre;line-height:1.45}
+code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.92em}
+.copy{position:absolute;right:8px;top:8px;border:1px solid var(--line);background:var(--panel);color:var(--text);padding:5px 8px;border-radius:8px;cursor:pointer}
+.copy.ok{color:var(--ok)}
+details{border:1px solid var(--line);border-radius:14px;background:var(--panel);margin:12px 0;overflow:hidden}
+summary{cursor:pointer;padding:15px 18px;font-weight:760}
+details>div{padding:0 18px 18px}
+.tabs{border:1px solid var(--line);border-radius:16px;overflow:hidden;background:var(--panel)}
+.tabbar{display:flex;flex-wrap:wrap;border-bottom:1px solid var(--line)}
+.tabbar button{border:0;border-right:1px solid var(--line);background:var(--panel2);color:var(--muted);padding:10px 14px;cursor:pointer}
+.tabbar button.active{background:var(--panel);color:var(--accent)}
+.tabpane{display:none;padding:18px}.tabpane.active{display:block}
+.diagram{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:14px;overflow:auto}
+svg text{font-family:system-ui,sans-serif;fill:var(--text)}
+svg .box{fill:var(--panel2);stroke:var(--accent2);stroke-width:2}
+svg .arrow{stroke:var(--accent);stroke-width:3;fill:none;stroke-dasharray:10 8;animation:dash 1.8s linear infinite}
+@keyframes dash{to{stroke-dashoffset:-36}}
+.pulse{animation:pulse 2.3s ease-in-out infinite;transform-box:fill-box;transform-origin:center}
+@keyframes pulse{50%{transform:scale(1.035)}}
+table{width:100%;border-collapse:collapse;background:var(--panel);border-radius:12px;overflow:hidden}
+th,td{border-bottom:1px solid var(--line);padding:10px;text-align:left;vertical-align:top}
+th{color:var(--accent)}
+.kbd{font-family:ui-monospace,monospace;border:1px solid var(--line);background:var(--panel2);padding:1px 6px;border-radius:6px}
+.lab{border:1px solid color-mix(in srgb,var(--accent2) 55%,var(--line));border-radius:18px;padding:20px;margin:20px 0;background:linear-gradient(180deg,var(--panel),color-mix(in srgb,var(--panel) 90%,var(--accent2)))}
+.step{display:grid;grid-template-columns:36px 1fr;gap:10px;margin:13px 0}.n{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:var(--accent2);color:white;font-weight:800}
+.quiz .answer{display:none}.quiz.show .answer{display:block}
+.small{font-size:.9rem;color:var(--muted)} .mono{font-family:ui-monospace,monospace}
+hr{border:0;border-top:1px solid var(--line)}
+footer{color:var(--muted);margin-top:50px;border-top:1px solid var(--line);padding-top:20px}
+@media(max-width:930px){.shell{grid-template-columns:1fr}aside{display:none}main{padding:22px 15px 60px}.hero{padding:23px}}
+@media print{.topbar,aside,.copy,.no-print{display:none!important}.shell{display:block}body{background:white;color:black}.card,.hero,.diagram,details,.lab,pre{box-shadow:none;break-inside:avoid}}
+</style>
+</head>
+<body>
+<div id="progress" class="progress"></div>
+<header class="topbar">
+  <div class="brand">☸ Kubernetes CRD Field Guide</div>
+  <button class="btn" id="themeBtn" aria-label="Toggle theme">◐ Theme</button>
+  <button class="btn" onclick="window.print()">⎙ Print</button>
+</header>
+
+<div class="shell">
+<aside>
+  <input id="filter" placeholder="Filter sections…" aria-label="Filter sections">
+  <nav id="nav">
+    <a href="#orientation">1. Orientation</a>
+    <a href="#mental-model">2. Mental model</a>
+    <a href="#anatomy">3. CRD anatomy</a>
+    <a href="#schema">4. Schema & validation</a>
+    <a href="#lifecycle">5. API lifecycle</a>
+    <a href="#controller">6. CRD vs controller</a>
+    <a href="#advanced">7. Advanced CRD features</a>
+    <a href="#versioning">8. Versioning & conversion</a>
+    <a href="#security">9. RBAC & safety</a>
+    <a href="#labs">10. Hands‑on labs</a>
+    <a href="#troubleshooting">11. Troubleshooting</a>
+    <a href="#design">12. Production design</a>
+    <a href="#assessment">13. Knowledge check</a>
+    <a href="#cheatsheet">14. Command cheat sheet</a>
+    <a href="#next">15. What comes next</a>
+  </nav>
+</aside>
+
+<main>
+<section class="hero" id="orientation" data-title="Orientation">
+  <div class="eyebrow">Standalone training reference • CRD / Custom Resources / API extension</div>
+  <h1>Custom Resource Definitions in Kubernetes</h1>
+  <p class="lede">A deep, practical guide to extending the Kubernetes API with your own resource types—without writing a new API server. The emphasis is not merely on “creating a CRD”, but on understanding API design, schema, validation, lifecycle, versioning, RBAC, reconciliation, debugging, and safe production evolution.</p>
+  <div class="chips"><span class="chip">Linux + networking assumed</span><span class="chip">Kubernetes working knowledge assumed</span><span class="chip">Self‑study ready</span><span class="chip">Hands‑on labs</span><span class="chip">Single-file offline guide</span></div>
+</section>
+
+<section>
+<h2>Learning outcomes</h2>
+<div class="grid">
+  <div class="card"><b>Explain</b><br>Custom Resource, CRD, API group, version, kind, plural resource, scope, schema, status and subresources.</div>
+  <div class="card"><b>Build</b><br>A namespaced CRD with OpenAPI validation, defaults, printer columns, a status subresource, and a platform-level Service definition.</div>
+  <div class="card"><b>Operate</b><br>Discover, inspect, query, patch and troubleshoot custom resources using normal Kubernetes tooling.</div>
+  <div class="card"><b>Design</b><br>Choose API boundaries, version safely, understand conversion, and avoid common CRD anti-patterns.</div>
+</div>
+<div class="callout"><b>Series continuity.</b> In the earlier Ingress traffic-management material, Kubernetes objects described desired network exposure while controllers translated them into runtime behavior. CRDs generalize that same pattern: define a new declarative API, then optionally pair it with a controller that continuously reconciles desired state into real state.</div>
+</section>
+
+<section id="mental-model" data-title="Mental model">
+<h2>2. The mental model: extend the API, then optionally automate it</h2>
+<p>A <b>Custom Resource (CR)</b> is an instance of a type that is not part of Kubernetes’ built-in API. A <b>CustomResourceDefinition (CRD)</b> registers that type with the API server. Once registered, the API behaves as though a new resource family exists: it participates in API discovery, validation, storage, RBAC, watch/list/get operations and normal <span class="mono">kubectl</span> workflows.</p>
+<div class="callout bad"><b>Critical distinction:</b> a CRD gives Kubernetes a new <i>data model and REST endpoint</i>. It does not, by itself, create Deployments, configure databases, rotate certificates, back up applications, or perform any other business action. Automation comes from a <b>controller/operator</b> that watches the custom resources and reconciles them.</div>
+
+<div class="diagram">
+<svg viewBox="0 0 1100 360" role="img" aria-label="CRD request flow">
+  <defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="var(--accent)"/></marker></defs>
+  <rect class="box pulse" x="35" y="120" rx="16" width="180" height="88"/><text x="125" y="152" text-anchor="middle" font-size="20">kubectl / client</text><text x="125" y="180" text-anchor="middle" font-size="14">WebApp YAML</text>
+  <rect class="box" x="300" y="95" rx="16" width="220" height="138"/><text x="410" y="135" text-anchor="middle" font-size="20">kube-apiserver</text><text x="410" y="162" text-anchor="middle" font-size="14">discovery • authz</text><text x="410" y="184" text-anchor="middle" font-size="14">schema • admission</text><text x="410" y="206" text-anchor="middle" font-size="14">REST endpoint</text>
+  <rect class="box" x="610" y="40" rx="16" width="200" height="95"/><text x="710" y="76" text-anchor="middle" font-size="19">CRD definition</text><text x="710" y="102" text-anchor="middle" font-size="14">schema + versions</text>
+  <rect class="box" x="610" y="205" rx="16" width="200" height="95"/><text x="710" y="241" text-anchor="middle" font-size="19">etcd storage</text><text x="710" y="267" text-anchor="middle" font-size="14">storage version</text>
+  <rect class="box pulse" x="885" y="120" rx="16" width="180" height="88"/><text x="975" y="152" text-anchor="middle" font-size="20">Controller</text><text x="975" y="180" text-anchor="middle" font-size="14">optional reconciler</text>
+  <path class="arrow" marker-end="url(#arrow)" d="M215 164H294"/><path class="arrow" marker-end="url(#arrow)" d="M520 145L605 100"/><path class="arrow" marker-end="url(#arrow)" d="M520 195L605 245"/><path class="arrow" marker-end="url(#arrow)" d="M810 252C850 250 850 172 880 166"/>
+</svg>
+</div>
+
+<h3>Built-in resource vs custom resource</h3>
+<table><thead><tr><th>Concept</th><th>Built-in example</th><th>Custom example</th></tr></thead><tbody>
+<tr><td>API group/version</td><td><code>apps/v1</code></td><td><code>platform.gnugroup.org/v1alpha1</code></td></tr>
+<tr><td>Kind</td><td><code>Deployment</code></td><td><code>WebApp</code></td></tr>
+<tr><td>REST resource</td><td><code>deployments</code></td><td><code>webapps</code></td></tr>
+<tr><td>Object</td><td>Deployment instance</td><td>WebApp instance</td></tr>
+<tr><td>Behavior</td><td>Deployment controller reconciles it</td><td>Your controller must reconcile it, if behavior is desired</td></tr>
+</tbody></table>
+</section>
+
+
+<section id="anatomy" data-title="CRD anatomy">
+<h2>3. Anatomy of a CRD — from YAML to a new Kubernetes API</h2>
+
+<p>A CRD can look intimidating because it contains several layers of YAML, but the idea is much simpler than the file first suggests. A CRD answers four basic questions:</p>
+
+<div class="grid">
+  <div class="card"><b>1. What is the new resource called?</b><br><code>WebApp</code>, <code>webapps</code>, short name <code>wa</code>.</div>
+  <div class="card"><b>2. Where does it live in the Kubernetes API?</b><br>API group <code>platform.gnugroup.org</code>, version <code>v1alpha1</code>.</div>
+  <div class="card"><b>3. Is it namespaced or cluster-wide?</b><br><code>scope: Namespaced</code> or <code>scope: Cluster</code>.</div>
+  <div class="card"><b>4. What data is allowed inside it?</b><br>The OpenAPI schema defines fields such as <code>image</code> and <code>replicas</code>.</div>
+</div>
+
+<div class="callout ok"><b>The simplest mental model:</b> a CRD is like registering a new Kubernetes object type. Once the CRD is accepted, the API server knows that objects of that type exist, what they are called, where their REST endpoint lives, which versions are available, and what their data should look like.</div>
+
+<h3>3.1 CRD versus Custom Resource</h3>
+<p>This is the most important distinction in the entire topic.</p>
+
+<table>
+<thead><tr><th>CRD</th><th>Custom Resource (CR)</th></tr></thead>
+<tbody>
+<tr><td>Defines a new Kubernetes resource <b>type</b>.</td><td>Creates one <b>instance</b> of that type.</td></tr>
+<tr><td>Comparable to defining a class or database schema.</td><td>Comparable to creating an object or database row.</td></tr>
+<tr><td>Example: define the <code>WebApp</code> type.</td><td>Example: create a WebApp named <code>payments</code>.</td></tr>
+<tr><td>Usually installed once per cluster.</td><td>Potentially many instances can exist.</td></tr>
+<tr><td>CRD itself is cluster-scoped.</td><td>CR instances follow the CRD's configured scope.</td></tr>
+</tbody>
+</table>
+
+<div class="tabs" data-tabs>
+<div class="tabbar"><button class="active">CRD: define the type</button><button>CR: create an object</button></div>
+
+<div class="tabpane active">
+<pre><button class="copy">Copy</button><code>apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: webapps.platform.gnugroup.org
+spec:
+  group: platform.gnugroup.org
+  scope: Namespaced
+  names:
+    plural: webapps
+    singular: webapp
+    kind: WebApp
+    shortNames:
+      - wa
+  versions:
+    - name: v1alpha1
+      served: true
+      storage: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              properties:
+                image:
+                  type: string
+                replicas:
+                  type: integer</code></pre>
+<p>This document says: <b>“Kubernetes, please add a new resource type called WebApp.”</b></p>
+</div>
+
+<div class="tabpane">
+<pre><button class="copy">Copy</button><code>apiVersion: platform.gnugroup.org/v1alpha1
+kind: WebApp
+metadata:
+  name: payments
+  namespace: crd-lab
+spec:
+  image: nginx:1.27
+  replicas: 3
+
+  service:
+    enabled: true
+    type: ClusterIP
+    port: 80
+    targetPort: 8080</code></pre>
+<p>This document says: <b>“Now create one WebApp object called payments, including the desired Service settings.”</b></p>
+</div>
+</div>
+
+<h3>3.2 See the hierarchy before reading individual lines</h3>
+
+<p>The CRD YAML can be divided into five logical areas:</p>
+
+<div class="diagram">
+<svg viewBox="0 0 1160 500" role="img" aria-label="CRD hierarchy">
+<defs>
+  <marker id="anatArrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+    <path d="M0,0 L0,6 L9,3 z" fill="var(--accent)"/>
+  </marker>
+</defs>
+
+<rect class="box pulse" x="430" y="25" rx="16" width="300" height="75"/>
+<text x="580" y="56" text-anchor="middle" font-size="20">CustomResourceDefinition</text>
+<text x="580" y="80" text-anchor="middle" font-size="13">the new API type registration</text>
+
+<rect class="box" x="30" y="165" rx="14" width="190" height="100"/>
+<text x="125" y="200" text-anchor="middle" font-size="18">metadata</text>
+<text x="125" y="226" text-anchor="middle" font-size="13">CRD's own name</text>
+<text x="125" y="246" text-anchor="middle" font-size="13">plural.group</text>
+
+<rect class="box" x="260" y="165" rx="14" width="190" height="100"/>
+<text x="355" y="200" text-anchor="middle" font-size="18">group + scope</text>
+<text x="355" y="226" text-anchor="middle" font-size="13">API address</text>
+<text x="355" y="246" text-anchor="middle" font-size="13">namespace boundary</text>
+
+<rect class="box" x="485" y="165" rx="14" width="190" height="100"/>
+<text x="580" y="200" text-anchor="middle" font-size="18">names</text>
+<text x="580" y="226" text-anchor="middle" font-size="13">kind / plural</text>
+<text x="580" y="246" text-anchor="middle" font-size="13">singular / aliases</text>
+
+<rect class="box" x="710" y="165" rx="14" width="190" height="100"/>
+<text x="805" y="200" text-anchor="middle" font-size="18">versions</text>
+<text x="805" y="226" text-anchor="middle" font-size="13">v1alpha1 / v1</text>
+<text x="805" y="246" text-anchor="middle" font-size="13">served + storage</text>
+
+<rect class="box" x="940" y="165" rx="14" width="190" height="100"/>
+<text x="1035" y="200" text-anchor="middle" font-size="18">schema</text>
+<text x="1035" y="226" text-anchor="middle" font-size="13">allowed fields</text>
+<text x="1035" y="246" text-anchor="middle" font-size="13">validation/defaults</text>
+
+<path class="arrow" marker-end="url(#anatArrow)" d="M500 100 C380 120 210 130 135 160"/>
+<path class="arrow" marker-end="url(#anatArrow)" d="M535 100 C455 125 390 135 360 160"/>
+<path class="arrow" marker-end="url(#anatArrow)" d="M580 100V158"/>
+<path class="arrow" marker-end="url(#anatArrow)" d="M625 100 C700 125 770 135 800 160"/>
+<path class="arrow" marker-end="url(#anatArrow)" d="M660 100 C800 120 970 130 1025 160"/>
+
+<rect x="125" y="335" rx="16" width="910" height="105" fill="var(--panel2)" stroke="var(--accent)" stroke-width="2"/>
+<text x="580" y="368" text-anchor="middle" font-size="19">Together these fields create a REST API endpoint</text>
+<text x="580" y="400" text-anchor="middle" font-size="17">/apis/platform.gnugroup.org/v1alpha1/namespaces/&lt;namespace&gt;/webapps</text>
+<text x="580" y="425" text-anchor="middle" font-size="13">kubectl and controllers then talk to this endpoint through the API server</text>
+</svg>
+</div>
+
+<h3>3.3 Start at the top: <code>apiVersion</code> and <code>kind</code></h3>
+
+<pre><button class="copy">Copy</button><code>apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition</code></pre>
+
+<p>These two lines describe the <b>CRD object itself</b>, not the WebApp objects that will be created later.</p>
+
+<table>
+<thead><tr><th>Line</th><th>Plain-language meaning</th></tr></thead>
+<tbody>
+<tr>
+<td><code>apiVersion: apiextensions.k8s.io/v1</code></td>
+<td>Use Kubernetes' built-in API-extension API to define a custom resource type.</td>
+</tr>
+<tr>
+<td><code>kind: CustomResourceDefinition</code></td>
+<td>The object being submitted is a CRD registration.</td>
+</tr>
+</tbody>
+</table>
+
+<div class="callout"><b>Do not confuse this with the custom resource's API version.</b> The CRD itself uses <code>apiextensions.k8s.io/v1</code>. A WebApp object created later uses <code>platform.gnugroup.org/v1alpha1</code>.</div>
+
+<h3>3.4 <code>metadata.name</code>: the CRD's registration name</h3>
+
+<pre><button class="copy">Copy</button><code>metadata:
+  name: webapps.platform.gnugroup.org</code></pre>
+
+<p>Kubernetes requires the CRD name to be built from:</p>
+
+<div class="card">
+<div style="font-size:1.25rem;text-align:center">
+<code>&lt;plural&gt;.&lt;group&gt;</code><br><br>
+<code>webapps</code> + <code>.</code> + <code>platform.gnugroup.org</code><br>
+↓<br>
+<b><code>webapps.platform.gnugroup.org</code></b>
+</div>
+</div>
+
+<p>This is the name you use when managing the CRD itself:</p>
+
+<pre><button class="copy">Copy</button><code>kubectl get crd webapps.platform.gnugroup.org
+kubectl describe crd webapps.platform.gnugroup.org</code></pre>
+
+<div class="callout warn"><b>Common error:</b> if <code>metadata.name</code> does not match <code>spec.names.plural + "." + spec.group</code>, Kubernetes rejects the CRD.</div>
+
+<h3>3.5 <code>spec.group</code>: choose the API group</h3>
+
+<pre><button class="copy">Copy</button><code>spec:
+  group: platform.gnugroup.org</code></pre>
+
+<p>The API group is the namespace of your API—not a Kubernetes namespace, but a logical API family. It prevents your resource name from colliding with another vendor's or project's resource.</p>
+
+<p>For example:</p>
+
+<table>
+<thead><tr><th>Group</th><th>Possible owner/purpose</th></tr></thead>
+<tbody>
+<tr><td><code>apps</code></td><td>Built-in Kubernetes application APIs such as Deployment.</td></tr>
+<tr><td><code>networking.k8s.io</code></td><td>Built-in Kubernetes networking APIs.</td></tr>
+<tr><td><code>cert-manager.io</code></td><td>An extension API owned by the cert-manager project.</td></tr>
+<tr><td><code>platform.gnugroup.org</code></td><td>Example custom platform API used in this training module.</td></tr>
+</tbody>
+</table>
+
+<p>Once combined with a version, this becomes the <code>apiVersion</code> used by Custom Resources:</p>
+
+<pre><button class="copy">Copy</button><code>apiVersion: platform.gnugroup.org/v1alpha1</code></pre>
+
+<div class="callout ok"><b>Good practice:</b> use a DNS-style group associated with a domain your organization controls. It gives the API a clear ownership boundary and reduces naming conflicts.</div>
+
+<h3>3.6 <code>scope</code>: does each object belong to a namespace?</h3>
+
+<pre><button class="copy">Copy</button><code>scope: Namespaced</code></pre>
+
+<p>The scope determines where CR instances live.</p>
+
+<table>
+<thead><tr><th>Scope</th><th>Meaning</th><th>Examples of suitable concepts</th></tr></thead>
+<tbody>
+<tr>
+<td><code>Namespaced</code></td>
+<td>Each object belongs to one Kubernetes namespace.</td>
+<td>Application, database request, backup policy, tenant workload.</td>
+</tr>
+<tr>
+<td><code>Cluster</code></td>
+<td>The object exists once at cluster scope and has no namespace.</td>
+<td>Cluster-wide infrastructure policy, global node-management configuration.</td>
+</tr>
+</tbody>
+</table>
+
+<p>For a namespaced WebApp:</p>
+
+<pre><button class="copy">Copy</button><code>metadata:
+  name: payments
+  namespace: production</code></pre>
+
+<p>The REST path contains the namespace:</p>
+
+<pre><code>/apis/platform.gnugroup.org/v1alpha1/namespaces/production/webapps/payments</code></pre>
+
+<p>For a cluster-scoped custom resource, the <code>/namespaces/production</code> portion is absent.</p>
+
+<div class="callout"><b>Useful distinction:</b> the <em>CRD definition itself</em> is cluster-scoped even when the <em>custom resources created from it</em> are namespaced.</div>
+
+<h3>3.7 <code>names</code>: teach Kubernetes the resource vocabulary</h3>
+
+<pre><button class="copy">Copy</button><code>names:
+  plural: webapps
+  singular: webapp
+  kind: WebApp
+  shortNames:
+    - wa</code></pre>
+
+<p>These fields control how humans, manifests, clients and REST paths refer to the resource.</p>
+
+<table>
+<thead><tr><th>Field</th><th>Used for</th><th>Example</th></tr></thead>
+<tbody>
+<tr>
+<td><code>plural</code></td>
+<td>REST collection and normal <code>kubectl get</code> resource name.</td>
+<td><code>kubectl get webapps</code></td>
+</tr>
+<tr>
+<td><code>singular</code></td>
+<td>Singular CLI/display alias.</td>
+<td><code>kubectl get webapp payments</code></td>
+</tr>
+<tr>
+<td><code>kind</code></td>
+<td>The value written in YAML manifests.</td>
+<td><code>kind: WebApp</code></td>
+</tr>
+<tr>
+<td><code>shortNames</code></td>
+<td>Convenient CLI aliases.</td>
+<td><code>kubectl get wa</code></td>
+</tr>
+</tbody>
+</table>
+
+<div class="callout warn"><b>Naming rules matter.</b> <code>plural</code>, <code>singular</code>, and short names are lowercase resource names. <code>kind</code> is normally a singular CamelCase name such as <code>WebApp</code>.</div>
+
+<h3>3.8 <code>versions</code>: expose one or more versions of your API</h3>
+
+<pre><button class="copy">Copy</button><code>versions:
+  - name: v1alpha1
+    served: true
+    storage: true</code></pre>
+
+<p>A CRD can support multiple API versions during its lifetime—for example:</p>
+
+<pre><code>v1alpha1  →  v1beta1  →  v1</code></pre>
+
+<p>Each version has two especially important switches:</p>
+
+<table>
+<thead><tr><th>Field</th><th>Question it answers</th></tr></thead>
+<tbody>
+<tr>
+<td><code>served: true</code></td>
+<td>“May clients send API requests using this version?”</td>
+</tr>
+<tr>
+<td><code>storage: true</code></td>
+<td>“Is this the canonical version Kubernetes uses when persisting this custom resource?”</td>
+</tr>
+</tbody>
+</table>
+
+<div class="callout bad"><b>Rule:</b> a CRD can serve multiple versions, but exactly <b>one</b> version must be marked <code>storage: true</code>.</div>
+
+<h4>A multi-version picture</h4>
+
+<pre><button class="copy">Copy</button><code>versions:
+  - name: v1alpha1
+    served: true
+    storage: false
+
+  - name: v1
+    served: true
+    storage: true</code></pre>
+
+<p>Clients can use either served version, while Kubernetes persists the resource using the configured storage version. If the versions differ semantically, a conversion strategy is needed; that is covered later in the module.</p>
+
+<h3>3.9 <code>schema</code>: describe what a valid WebApp looks like</h3>
+
+<p>This is where you define the data contract for each version.</p>
+
+<pre><button class="copy">Copy</button><code>schema:
+  openAPIV3Schema:
+    type: object
+    properties:
+      spec:
+        type: object
+        properties:
+          image:
+            type: string
+          replicas:
+            type: integer</code></pre>
+
+<p>Read the YAML from the outside inward:</p>
+
+<div class="grid">
+<div class="card"><b>Whole CR</b><br><code>type: object</code><br>The entire WebApp document is an object.</div>
+<div class="card"><b><code>spec</code></b><br><code>type: object</code><br>The desired configuration is another nested object.</div>
+<div class="card"><b><code>spec.image</code></b><br><code>type: string</code><br>The value must be text.</div>
+<div class="card"><b><code>spec.replicas</code></b><br><code>type: integer</code><br>The value must be an integer.</div>
+</div>
+
+<p>With this schema, a valid object might look like:</p>
+
+<pre><button class="copy">Copy</button><code>spec:
+  image: nginx:1.27
+  replicas: 3</code></pre>
+
+<p>Whereas this would be invalid if the schema requires an integer:</p>
+
+<pre><code>spec:
+  replicas: "three"   # string, not integer</code></pre>
+
+<h4>Adding a Service definition to the CRD</h4>
+<p>The CRD can also expose a higher-level <code>service</code> section. This still does <b>not</b> create a Kubernetes Service by itself; it only records the desired Service configuration. A controller introduced later can read this section and create/update a normal <code>v1/Service</code> object.</p>
+
+<pre><button class="copy">Copy</button><code>spec:
+  service:
+    type: object
+    properties:
+      enabled:
+        type: boolean
+        default: true
+      type:
+        type: string
+        enum: ["ClusterIP", "NodePort", "LoadBalancer"]
+        default: "ClusterIP"
+      port:
+        type: integer
+        minimum: 1
+        maximum: 65535
+        default: 80
+      targetPort:
+        type: integer
+        minimum: 1
+        maximum: 65535
+        default: 8080</code></pre>
+
+<div class="callout ok"><b>Design choice:</b> the training CRD intentionally exposes only a small, platform-approved subset of Service configuration. This is easier to validate and safer to evolve than embedding the entire Kubernetes Service API inside the custom resource.</div>
+
+<div class="callout"><b>The schema does three jobs:</b> it helps Kubernetes validate data, prune unknown fields according to structural-schema rules, and support features such as defaulting. Section 4 goes deeper into all three.</div>
+
+<h3>3.10 How all fields combine into the API address</h3>
+
+<p>One of the best ways to understand a CRD is to derive the endpoint it creates.</p>
+
+<table>
+<thead><tr><th>CRD field</th><th>Value</th></tr></thead>
+<tbody>
+<tr><td><code>spec.group</code></td><td><code>platform.gnugroup.org</code></td></tr>
+<tr><td><code>versions[].name</code></td><td><code>v1alpha1</code></td></tr>
+<tr><td><code>spec.scope</code></td><td><code>Namespaced</code></td></tr>
+<tr><td><code>names.plural</code></td><td><code>webapps</code></td></tr>
+</tbody>
+</table>
+
+<p>Kubernetes combines them into:</p>
+
+<pre><code>/apis/{group}/{version}/namespaces/{namespace}/{plural}
+
+↓ becomes ↓
+
+/apis/platform.gnugroup.org/v1alpha1/namespaces/crd-lab/webapps</code></pre>
+
+<p>You can see this endpoint yourself after Lab 1:</p>
+
+<pre><button class="copy">Copy</button><code>kubectl get --raw \
+  /apis/platform.gnugroup.org/v1alpha1/namespaces/crd-lab/webapps</code></pre>
+
+<h3>3.11 How the CRD changes <code>kubectl</code></h3>
+
+<p>Before installing the CRD:</p>
+
+<pre><code>kubectl get webapps
+
+error: the server doesn't have a resource type "webapps"</code></pre>
+
+<p>After installing the CRD:</p>
+
+<pre><button class="copy">Copy</button><code>kubectl api-resources --api-group=platform.gnugroup.org
+kubectl get webapps
+kubectl get webapp
+kubectl get wa
+kubectl explain webapp
+kubectl explain webapp.spec</code></pre>
+
+<p>This happens because the API server publishes the new resource through its API discovery mechanisms.</p>
+
+<h3>3.12 A complete line-by-line translation</h3>
+
+<table>
+<thead><tr><th>CRD YAML</th><th>Read it as…</th></tr></thead>
+<tbody>
+<tr><td><code>apiVersion: apiextensions.k8s.io/v1</code></td><td>Use Kubernetes' CRD API.</td></tr>
+<tr><td><code>kind: CustomResourceDefinition</code></td><td>I am defining a new Kubernetes resource type.</td></tr>
+<tr><td><code>metadata.name: webapps.platform.gnugroup.org</code></td><td>Register the CRD using plural.group naming.</td></tr>
+<tr><td><code>group: platform.gnugroup.org</code></td><td>Place my resource under this API group.</td></tr>
+<tr><td><code>scope: Namespaced</code></td><td>Each WebApp belongs to a namespace.</td></tr>
+<tr><td><code>plural: webapps</code></td><td>The REST collection and primary CLI name is webapps.</td></tr>
+<tr><td><code>singular: webapp</code></td><td>Allow the singular resource alias webapp.</td></tr>
+<tr><td><code>kind: WebApp</code></td><td>Custom Resource manifests use <code>kind: WebApp</code>.</td></tr>
+<tr><td><code>shortNames: [wa]</code></td><td>Allow convenient commands such as <code>kubectl get wa</code>.</td></tr>
+<tr><td><code>name: v1alpha1</code></td><td>This version of the WebApp API is called v1alpha1.</td></tr>
+<tr><td><code>served: true</code></td><td>The API server accepts requests for v1alpha1.</td></tr>
+<tr><td><code>storage: true</code></td><td>Persist objects using this version as the storage version.</td></tr>
+<tr><td><code>openAPIV3Schema</code></td><td>Here is the contract describing valid WebApp data.</td></tr>
+</tbody>
+</table>
+
+<h3>3.13 What Kubernetes has after the CRD is created</h3>
+
+<p>After Kubernetes accepts the CRD, it now has:</p>
+
+<div class="grid">
+<div class="card"><b>API discovery entry</b><br>Clients can discover <code>webapps.platform.gnugroup.org</code>.</div>
+<div class="card"><b>REST endpoints</b><br>Clients can create, read, update, list, watch and delete WebApp objects, subject to RBAC.</div>
+<div class="card"><b>Schema knowledge</b><br>The API server can validate/prune/default fields according to the CRD.</div>
+<div class="card"><b>Persistent objects</b><br>Accepted Custom Resources can be persisted through the Kubernetes API storage path.</div>
+<div class="card"><b>Watchable events</b><br>A future controller can watch WebApp objects and react to changes.</div>
+<div class="card"><b>Still no application behavior</b><br>The CRD alone does not create Pods, Deployments or Services.</div>
+</div>
+
+<div class="callout bad"><b>Repeat this until it becomes automatic:</b><br>
+CRD = <b>define the API</b>.<br>
+CR = <b>store desired data in that API</b>.<br>
+Controller = <b>turn that desired data into real behavior</b>.</div>
+
+<h3>3.14 Common trainee confusions</h3>
+
+<details open><summary>“Why are there two kinds in the examples?”</summary><div>
+<p>The CRD document has <code>kind: CustomResourceDefinition</code> because that object registers a new type. The resource created later has <code>kind: WebApp</code> because it is an instance of the newly registered type.</p>
+</div></details>
+
+<details><summary>“Why does the CRD use one apiVersion but WebApp uses another?”</summary><div>
+<p>The CRD object belongs to Kubernetes' built-in API extension system: <code>apiextensions.k8s.io/v1</code>. The WebApp belongs to the API you created: <code>platform.gnugroup.org/v1alpha1</code>.</p>
+</div></details>
+
+<details><summary>“Does <code>v1alpha1</code> mean Kubernetes itself is alpha?”</summary><div>
+<p>No. It describes the maturity/version of <em>your WebApp API</em>, not Kubernetes itself.</p>
+</div></details>
+
+<details><summary>“Does <code>scope: Namespaced</code> make the CRD namespaced?”</summary><div>
+<p>No. The CRD registration remains cluster-scoped. The setting means that <em>WebApp instances</em> are namespaced.</p>
+</div></details>
+
+<details><summary>“Does defining <code>replicas</code> make Kubernetes create replicas?”</summary><div>
+<p>No. The schema only allows and validates the field. A controller must read <code>spec.replicas</code> and create or update actual workload resources.</p>
+</div></details>
+
+<details><summary>“Why not put everything under <code>metadata</code>?”</summary><div>
+<p><code>metadata</code> has Kubernetes-defined semantics for identity and object management. Your domain configuration normally belongs under fields such as <code>spec</code>, while observed controller state commonly belongs under <code>status</code>.</p>
+</div></details>
+
+<div class="callout warn"><span class="assumption">ASSUMED FROM HERE</span> Later sections use the normal Kubernetes convention that <code>spec</code> represents desired state and <code>status</code> represents observed state. You do not need a controller yet to understand the CRD, but status becomes much more meaningful once a controller is introduced.</div>
+
+<h3>3.15 Five-question checkpoint</h3>
+
+<details><summary>1. What does the CRD create: an application or an API resource type?</summary><div><b>An API resource type.</b> Application behavior requires a controller or another actor.</div></details>
+<details><summary>2. From where does <code>apiVersion: platform.gnugroup.org/v1alpha1</code> come?</summary><div>It combines <code>spec.group</code> with <code>versions[].name</code>.</div></details>
+<details><summary>3. What determines the word used in <code>kubectl get webapps</code>?</summary><div><code>spec.names.plural</code>.</div></details>
+<details><summary>4. What determines whether a CR needs a namespace?</summary><div><code>spec.scope</code>.</div></details>
+<details><summary>5. What decides whether <code>replicas: "three"</code> is legal?</summary><div>The version's <code>schema.openAPIV3Schema</code>. If replicas is defined as an integer, the string value is rejected.</div></details>
+
+</section>
+
+
+<section id="schema" data-title="Schema & validation">
+<h2>4. Schema, validation, defaulting and pruning</h2>
+<p>A production CRD is an API contract. The schema should prevent invalid states early and make the object understandable to clients and humans.</p>
+<div class="tabs" data-tabs>
+<div class="tabbar"><button class="active">Validation</button><button>Defaults</button><button>Pruning</button><button>CEL</button></div>
+<div class="tabpane active">
+<pre><button class="copy">Copy</button><code>schema:
+  openAPIV3Schema:
+    type: object
+    required: ["spec"]
+    properties:
+      spec:
+        type: object
+        required: ["image"]
+        properties:
+          image:
+            type: string
+            minLength: 1
+          replicas:
+            type: integer
+            minimum: 1
+            maximum: 10
+          exposure:
+            type: string
+            enum: ["ClusterIP", "Ingress"]</code></pre>
+<p>Reject impossible or unsupported requests at admission time rather than relying on a controller to discover them later.</p>
+</div>
+<div class="tabpane">
+<pre><button class="copy">Copy</button><code>replicas:
+  type: integer
+  minimum: 1
+  maximum: 10
+  default: 1</code></pre>
+<p>Defaults are applied according to the CRD schema. A default is part of your API behavior; changing it later can alter how newly created objects behave.</p>
+</div>
+<div class="tabpane">
+<p>Unknown fields not represented by the structural schema are generally pruned. If you intentionally need free-form nested data, Kubernetes provides extension mechanisms such as <code>x-kubernetes-preserve-unknown-fields</code>, but broad use weakens validation and API clarity.</p>
+</div>
+<div class="tabpane">
+<p>CRDs can express richer validation using Kubernetes Common Expression Language (CEL) through <code>x-kubernetes-validations</code>. CRD validation rules using CEL are stable (GA) in modern Kubernetes releases; they are useful for invariants that involve multiple fields.</p>
+<pre><button class="copy">Copy</button><code>x-kubernetes-validations:
+  - rule: "self.minReplicas &lt;= self.maxReplicas"
+    message: "minReplicas must not exceed maxReplicas"</code></pre>
+</div>
+</div>
+<h3>Schema design rule</h3>
+<div class="callout ok"><b>Prefer “make invalid states unrepresentable.”</b> Use required fields, enums, numeric ranges, formats, object shape and cross-field validation where appropriate. The controller should focus on reconciliation—not basic input hygiene.</div>
+</section>
+
+<section id="lifecycle" data-title="API lifecycle">
+<h2>5. What happens when a Custom Resource is submitted?</h2>
+<div class="diagram">
+<svg viewBox="0 0 1200 260" role="img" aria-label="Custom Resource admission lifecycle">
+<defs><marker id="a2" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="var(--accent)"/></marker></defs>
+<g>
+<rect class="box" x="20" y="85" width="155" height="80" rx="15"/><text x="98" y="118" text-anchor="middle">Client request</text><text x="98" y="142" text-anchor="middle" font-size="13">POST /apis/…</text>
+<rect class="box" x="220" y="85" width="155" height="80" rx="15"/><text x="298" y="118" text-anchor="middle">AuthN/AuthZ</text><text x="298" y="142" text-anchor="middle" font-size="13">identity + RBAC</text>
+<rect class="box" x="420" y="85" width="155" height="80" rx="15"/><text x="498" y="118" text-anchor="middle">Schema</text><text x="498" y="142" text-anchor="middle" font-size="13">default + validate</text>
+<rect class="box" x="620" y="85" width="155" height="80" rx="15"/><text x="698" y="118" text-anchor="middle">Admission</text><text x="698" y="142" text-anchor="middle" font-size="13">policies/webhooks</text>
+<rect class="box" x="820" y="85" width="155" height="80" rx="15"/><text x="898" y="118" text-anchor="middle">Persist</text><text x="898" y="142" text-anchor="middle" font-size="13">storage version</text>
+<rect class="box" x="1020" y="85" width="155" height="80" rx="15"/><text x="1098" y="118" text-anchor="middle">Watch event</text><text x="1098" y="142" text-anchor="middle" font-size="13">controller may react</text>
+<path class="arrow" marker-end="url(#a2)" d="M175 125H215"/><path class="arrow" marker-end="url(#a2)" d="M375 125H415"/><path class="arrow" marker-end="url(#a2)" d="M575 125H615"/><path class="arrow" marker-end="url(#a2)" d="M775 125H815"/><path class="arrow" marker-end="url(#a2)" d="M975 125H1015"/>
+</g></svg>
+</div>
+<p>The exact admission chain depends on cluster configuration, but custom resources participate in the Kubernetes API machinery. CRDs do not bypass the platform’s authorization model.</p>
+</section>
+
+<section id="controller" data-title="CRD vs controller">
+<h2>6. CRD vs controller/operator</h2>
+<div class="grid">
+<div class="card"><h3>CRD</h3><p>Defines the API type and schema. API server stores and serves instances. Think: <b>noun</b>.</p><p><code>WebApp</code>, <code>Database</code>, <code>BackupPolicy</code>.</p></div>
+<div class="card"><h3>Controller</h3><p>Watches objects and drives actual state toward desired state. Think: <b>reconciliation behavior</b>.</p><p>Create Deployment, Service, Secret, cloud resource, status conditions, etc.</p></div>
+<div class="card"><h3>Operator</h3><p>A controller focused on automating domain knowledge and lifecycle operations, usually through one or more custom APIs.</p></div>
+</div>
+<div class="diagram">
+<svg viewBox="0 0 1000 360">
+<defs><marker id="a3" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="var(--accent)"/></marker></defs>
+<rect class="box" x="50" y="125" width="210" height="105" rx="16"/><text x="155" y="160" text-anchor="middle" font-size="20">WebApp CR</text><text x="155" y="188" text-anchor="middle">spec.replicas: 3</text>
+<rect class="box pulse" x="395" y="105" width="210" height="145" rx="16"/><text x="500" y="148" text-anchor="middle" font-size="21">WebApp Controller</text><text x="500" y="180" text-anchor="middle">observe → compare</text><text x="500" y="205" text-anchor="middle">act → update status</text>
+<rect class="box" x="750" y="45" width="190" height="90" rx="16"/><text x="845" y="80" text-anchor="middle">Deployment</text><text x="845" y="105" text-anchor="middle">3 replicas</text>
+<rect class="box" x="750" y="205" width="190" height="90" rx="16"/><text x="845" y="240" text-anchor="middle">Service</text><text x="845" y="265" text-anchor="middle">from spec.service</text>
+<path class="arrow" marker-end="url(#a3)" d="M260 177H388"/><path class="arrow" marker-end="url(#a3)" d="M605 150C670 125 690 95 744 91"/><path class="arrow" marker-end="url(#a3)" d="M605 205C670 230 690 250 744 250"/>
+</svg>
+</div>
+<div class="callout warn"><b>Do not fake reconciliation in a CRD schema.</b> Schema describes accepted data. It is not a workflow engine. If desired state must cause external effects, use a controller, operator, admission component, or another service suited to that responsibility.</div>
+<div class="callout"><b>Our WebApp example now demonstrates this directly:</b> <code>spec.service</code> is only API data. A future WebApp controller interprets it and reconciles a real <code>v1/Service</code>. Keeping the custom API intentionally smaller than the full Service API gives the platform team a stable abstraction and avoids leaking every Kubernetes Service option into the higher-level contract.</div>
+</section>
+
+<section id="advanced" data-title="Advanced CRD features">
+<h2>7. Advanced CRD features that make the API usable</h2>
+
+<h3>7.1 Status subresource</h3>
+<p>Enable <code>/status</code> so controllers can update observed state separately from user-authored desired state.</p>
+<pre><button class="copy">Copy</button><code>subresources:
+  status: {}</code></pre>
+<p>Recommended status fields include <code>observedGeneration</code> and standard-style <code>conditions</code>. A controller can compare <code>metadata.generation</code> to <code>status.observedGeneration</code> to signal whether the current spec has been observed.</p><p class="small">For production APIs, model conditions deliberately (commonly including type, status, reason, message, lastTransitionTime and, where useful, observedGeneration) and consider Kubernetes list-map semantics when the controller-runtime/API design requires stable condition merging.</p>
+
+<h3>7.2 Scale subresource</h3>
+<p>For workload-like APIs, the scale subresource can integrate with clients that understand the Kubernetes <code>scale</code> contract.</p>
+<pre><button class="copy">Copy</button><code>subresources:
+  status: {}
+  scale:
+    specReplicasPath: .spec.replicas
+    statusReplicasPath: .status.replicas
+    labelSelectorPath: .status.selector</code></pre>
+
+<h3>7.3 Additional printer columns</h3>
+<pre><button class="copy">Copy</button><code>additionalPrinterColumns:
+  - name: Image
+    type: string
+    jsonPath: .spec.image
+  - name: Replicas
+    type: integer
+    jsonPath: .spec.replicas
+  - name: Phase
+    type: string
+    jsonPath: .status.phase
+  - name: Age
+    type: date
+    jsonPath: .metadata.creationTimestamp</code></pre>
+
+<h3>7.4 Finalizers</h3>
+<p>A finalizer is a deletion gate. Controllers add a string to <code>metadata.finalizers</code> when external cleanup must occur before the API object disappears. When deletion is requested, Kubernetes sets <code>deletionTimestamp</code>; the controller cleans up and removes its finalizer.</p>
+<div class="callout bad"><b>Operational risk:</b> a broken controller can leave objects stuck in <code>Terminating</code> because its finalizer is never removed. Never strip a finalizer blindly in production; first understand what cleanup it protects.</div>
+
+<h3>7.5 Categories, short names and discovery</h3>
+<pre><button class="copy">Copy</button><code>kubectl api-resources | grep -i webapp
+kubectl explain webapp
+kubectl explain webapp.spec
+kubectl get webapps
+kubectl get wa</code></pre>
+</section>
+
+<section id="versioning" data-title="Versioning & conversion">
+<h2>8. Versioning, storage and conversion</h2>
+<p>A CRD can serve multiple API versions. This is an API-evolution tool, not merely a label change.</p>
+<table><thead><tr><th>Flag</th><th>Meaning</th></tr></thead><tbody>
+<tr><td><code>served: true</code></td><td>The API server accepts/returns requests for this version.</td></tr>
+<tr><td><code>storage: true</code></td><td>This version is used to persist objects. Exactly one version is storage.</td></tr>
+</tbody></table>
+
+<div class="tabs" data-tabs>
+<div class="tabbar"><button class="active">None strategy</button><button>Webhook strategy</button><button>Migration</button></div>
+<div class="tabpane active"><p>With conversion strategy <code>None</code>, Kubernetes changes the <code>apiVersion</code> presented to clients but does not perform semantic transformation of fields; pruning may still occur according to schema. Use this only when the served versions are schema-compatible for your use case.</p></div>
+<div class="tabpane"><p>A conversion webhook is required when versions represent data differently—for example, <code>spec.size</code> becomes <code>spec.resources.requests.storage</code>. The API server calls the webhook when conversion is needed between served and stored versions.</p></div>
+<div class="tabpane"><p>Changing the storage version does not automatically rewrite pre-existing objects in etcd. New or updated objects are written using the current storage version. Production API upgrades therefore need an explicit storage-migration procedure (for example, Storage Version Migration where appropriate) and verification of <code>status.storedVersions</code>.</p></div>
+</div>
+
+<div class="callout warn"><span class="assumption">ADVANCED ASSUMPTION</span> Conversion webhooks assume you understand HTTPS Services, certificates/CA bundles, API server reachability, admission-style request/response handling and highly available webhook deployment. Those are beyond the basic CRD labs below.</div>
+
+<h3>Version naming</h3>
+<p>Typical progression is <code>v1alpha1</code> → <code>v1beta1</code> → <code>v1</code>. These labels communicate stability expectations; they should correspond to an intentional compatibility policy.</p>
+</section>
+
+<section id="security" data-title="RBAC & safety">
+<h2>9. RBAC, tenancy and security boundaries</h2>
+<p>Custom resources use Kubernetes authentication, authorization and audit mechanisms. Creating a CRD does not automatically grant ordinary users permission to use it.</p>
+<pre><button class="copy">Copy</button><code>apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  namespace: crd-lab
+  name: webapp-editor
+rules:
+  - apiGroups: ["platform.gnugroup.org"]
+    resources: ["webapps"]
+    verbs: ["get","list","watch","create","update","patch","delete"]</code></pre>
+<p>If a controller writes status, its RBAC typically needs the <code>webapps/status</code> subresource as well.</p>
+<pre><button class="copy">Copy</button><code>- apiGroups: ["platform.gnugroup.org"]
+  resources: ["webapps/status"]
+  verbs: ["get","patch","update"]</code></pre>
+<div class="callout"><b>Scope is security architecture.</b> Prefer <code>Namespaced</code> when ownership and tenancy naturally map to namespaces. Choose <code>Cluster</code> only for genuinely cluster-wide concepts.</div>
+</section>
+
+<section id="labs" data-title="Hands-on labs">
+<h2>10. Hands-on labs — end to end</h2>
+<div class="callout ok"><b>Lab environment.</b> These labs intentionally require no controller. They teach API extension mechanics first. A later operator/controller module can build reconciliation on top of the same <code>WebApp</code> API.</div>
+
+<div class="lab">
+<h3>Lab 0 — Preflight and environment</h3>
+<p><b>Goal:</b> prove that your admin shell can reach the cluster and create CRDs.</p>
+<pre><button class="copy">Copy</button><code>export LAB_NS=crd-lab
+export CRD=webapps.platform.gnugroup.org
+export API_GROUP=platform.gnugroup.org
+export API_VERSION=v1alpha1
+
+kubectl version
+kubectl cluster-info
+kubectl auth can-i create customresourcedefinitions.apiextensions.k8s.io
+kubectl auth can-i create namespaces
+kubectl get nodes
+
+kubectl create namespace "$LAB_NS" --dry-run=client -o yaml | kubectl apply -f -</code></pre>
+<p><b>Expected:</b> API access succeeds; the CRD authorization check should return <code>yes</code> for this training lab. If it returns <code>no</code>, use a cluster-admin-approved environment rather than trying to bypass RBAC.</p>
+</div>
+
+<div class="lab">
+<h3>Lab 1 — Register a production-shaped WebApp CRD</h3>
+<div class="callout"><b>How to read this lab:</b> the YAML below is intentionally heavily commented. The comments are valid YAML and do not change the object, so trainees can copy the complete block exactly as shown. Read the comments before applying it, then use <code>kubectl explain</code> and <code>kubectl get crd ... -o yaml</code> to connect the declaration with what Kubernetes registered.</div>
+<pre><button class="copy">Copy</button><code>cat &gt; /tmp/webapp-crd.yaml &lt;&lt;'EOF'
+# CRDs are registered through the Kubernetes API extensions group.
+apiVersion: apiextensions.k8s.io/v1
+
+# This object tells Kubernetes to create a brand-new API resource type.
+kind: CustomResourceDefinition
+
+metadata:
+  # CRD names MUST follow: <plural-resource-name>.<api-group>
+  # plural = webapps
+  # group  = platform.gnugroup.org
+  name: webapps.platform.gnugroup.org
+
+spec:
+  # The API group under which WebApp resources will be exposed.
+  # Custom resources will use:
+  # apiVersion: platform.gnugroup.org/v1alpha1
+  group: platform.gnugroup.org
+
+  # Namespaced means every WebApp belongs to a Kubernetes namespace.
+  # Use "Cluster" only for genuinely cluster-wide resources.
+  scope: Namespaced
+
+  # Human-facing and REST-facing names for the new resource.
+  names:
+    # REST collection name: kubectl get webapps
+    plural: webapps
+
+    # Singular resource name: kubectl get webapp <name>
+    singular: webapp
+
+    # YAML kind used inside Custom Resource manifests.
+    kind: WebApp
+
+    # Optional short alias: kubectl get wa
+    shortNames: ["wa"]
+
+    # Allows the resource to appear in kubectl get all.
+    categories: ["all"]
+
+  # A CRD may expose one or more API versions.
+  versions:
+    - name: v1alpha1
+
+      # Clients may use this version.
+      served: true
+
+      # Persist objects using this version. Exactly one version must be storage=true.
+      storage: true
+
+      # Improve kubectl get webapps output.
+      additionalPrinterColumns:
+        - name: Image
+          type: string
+          jsonPath: .spec.image
+
+        - name: Replicas
+          type: integer
+          jsonPath: .spec.replicas
+
+        # Show desired Service type directly.
+        - name: Service
+          type: string
+          jsonPath: .spec.service.type
+
+        # A controller may later populate this.
+        - name: Phase
+          type: string
+          jsonPath: .status.phase
+
+        - name: Age
+          type: date
+          jsonPath: .metadata.creationTimestamp
+
+      # Enable a separate /status API subresource.
+      subresources:
+        status: {}
+
+      # Define and validate WebApp objects.
+      schema:
+        openAPIV3Schema:
+          type: object
+          required: ["spec"]
+          properties:
+            # spec = desired state from the user.
+            spec:
+              type: object
+              required: ["image"]
+              properties:
+                # Container image a future controller could deploy.
+                image:
+                  type: string
+                  minLength: 1
+
+                # Desired workload replica count.
+                replicas:
+                  type: integer
+                  minimum: 1
+                  maximum: 10
+                  default: 1
+
+                # Desired Kubernetes Service configuration.
+                # This is only intent/data. It DOES NOT create a Service by itself.
+                service:
+                  type: object
+                  properties:
+                    # If false, a future controller should not create a Service.
+                    enabled:
+                      type: boolean
+                      default: true
+
+                    # Limit users to Service types approved by this platform API.
+                    type:
+                      type: string
+                      enum: ["ClusterIP", "NodePort", "LoadBalancer"]
+                      default: "ClusterIP"
+
+                    # Port exposed by the generated Kubernetes Service.
+                    port:
+                      type: integer
+                      minimum: 1
+                      maximum: 65535
+                      default: 80
+
+                    # Port on the application Pods that receives traffic.
+                    targetPort:
+                      type: integer
+                      minimum: 1
+                      maximum: 65535
+                      default: 8080
+
+            # status = observed state, normally written by a controller.
+            status:
+              type: object
+              properties:
+                # Which metadata.generation the controller has processed.
+                observedGeneration:
+                  type: integer
+                  format: int64
+
+                # Number of workload replicas currently ready.
+                readyReplicas:
+                  type: integer
+                  minimum: 0
+
+                # Name of the Service created/managed by the controller.
+                serviceName:
+                  type: string
+
+                # Simple lifecycle value such as Pending or Ready.
+                phase:
+                  type: string
+
+                # Structured controller conditions.
+                conditions:
+                  type: array
+                  items:
+                    type: object
+                    required: ["type", "status"]
+                    properties:
+                      type:
+                        type: string
+                      status:
+                        type: string
+                        enum: ["True", "False", "Unknown"]
+                      reason:
+                        type: string
+                      message:
+                        type: string
+                      lastTransitionTime:
+                        type: string
+                        format: date-time
+EOF
+kubectl apply -f /tmp/webapp-crd.yaml
+kubectl wait --for=condition=Established "crd/$CRD" --timeout=60s</code></pre>
+<p><b>Verify:</b></p>
+<pre><button class="copy">Copy</button><code>kubectl get crd "$CRD"
+kubectl describe crd "$CRD"
+kubectl api-resources --api-group="$API_GROUP"
+kubectl explain webapp
+kubectl explain webapp.spec
+kubectl explain webapp.spec.replicas</code></pre>
+</div>
+
+<div class="lab">
+<h3>Lab 2 — Create a Custom Resource instance</h3>
+<pre><button class="copy">Copy</button><code>cat &gt; /tmp/demo-webapp.yaml &lt;&lt;'EOF'
+apiVersion: platform.gnugroup.org/v1alpha1
+kind: WebApp
+metadata:
+  name: demo
+  namespace: crd-lab
+spec:
+  image: nginx:1.27
+  replicas: 3
+
+  service:
+    enabled: true
+    type: ClusterIP
+    port: 80
+    targetPort: 8080
+EOF
+
+kubectl apply -f /tmp/demo-webapp.yaml
+kubectl get webapps -n "$LAB_NS"
+kubectl get wa demo -n "$LAB_NS" -o yaml</code></pre>
+<div class="callout warn"><b>Expected:</b> the object exists, but no Pods appear because no WebApp controller exists. Run <code>kubectl get pods -n "$LAB_NS"</code> and use the empty result to reinforce the CRD/controller boundary.</div>
+</div>
+
+<div class="lab">
+<h3>Lab 3 — See defaulting in action</h3>
+<pre><button class="copy">Copy</button><code>cat &gt; /tmp/defaulted-webapp.yaml &lt;&lt;'EOF'
+apiVersion: platform.gnugroup.org/v1alpha1
+kind: WebApp
+metadata:
+  name: defaulted
+  namespace: crd-lab
+spec:
+  image: nginx:1.27
+  service: {}
+EOF
+
+kubectl apply -f /tmp/defaulted-webapp.yaml
+kubectl get webapp defaulted -n "$LAB_NS" -o yaml</code></pre>
+<p><b>Expected:</b> Kubernetes applies defaults for <code>replicas</code> and for fields inside the explicitly present <code>service: {}</code> object. You should see values such as <code>replicas: 1</code>, <code>service.enabled: true</code>, <code>service.type: ClusterIP</code>, <code>service.port: 80</code>, and <code>service.targetPort: 8080</code>.</p>
+<div class="callout warn"><b>Important defaulting nuance:</b> defaults on fields nested inside <code>service</code> are demonstrated here by explicitly creating the parent object as <code>service: {}</code>. This makes the nested defaults visible and avoids trainees assuming that an omitted parent object must always be synthesized.</div>
+</div>
+
+<div class="lab">
+<h3>Lab 4 — Trigger validation failures deliberately</h3>
+<pre><button class="copy">Copy</button><code>cat &gt; /tmp/bad-webapp.yaml &lt;&lt;'EOF'
+apiVersion: platform.gnugroup.org/v1alpha1
+kind: WebApp
+metadata:
+  name: bad
+  namespace: crd-lab
+spec:
+  image: nginx:1.27
+  replicas: 99
+
+  service:
+    enabled: true
+    type: PublicInternet
+    port: 70000
+    targetPort: 0
+EOF
+
+kubectl apply -f /tmp/bad-webapp.yaml</code></pre>
+<p><b>Expected:</b> the API server rejects the object because multiple schema constraints are violated. Read the error from top to bottom; it identifies the failing paths.</p>
+</div>
+
+<div class="lab">
+<h3>Lab 4A — Compare CRD Service intent with a real Kubernetes Service</h3>
+<p><b>Goal:</b> understand the boundary between <code>spec.service</code> in the custom API and the built-in <code>v1/Service</code> resource that a future controller would create.</p>
+
+<p>The custom resource expresses application intent:</p>
+
+<pre><button class="copy">Copy</button><code>apiVersion: platform.gnugroup.org/v1alpha1
+kind: WebApp
+metadata:
+  name: payments
+  namespace: crd-lab
+spec:
+  image: nginx:1.27
+  replicas: 3
+
+  service:
+    enabled: true
+    type: ClusterIP
+    port: 80
+    targetPort: 8080</code></pre>
+
+<p>A future controller could translate that section into a normal Kubernetes Service resembling:</p>
+
+<pre><button class="copy">Copy</button><code>apiVersion: v1
+kind: Service
+metadata:
+  name: payments
+  namespace: crd-lab
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: payments
+  ports:
+    - name: http
+      protocol: TCP
+      port: 80
+      targetPort: 8080</code></pre>
+
+<div class="callout bad"><b>Do not expect this Service to exist yet.</b> The current module intentionally has no WebApp controller. Verify that distinction:</div>
+
+<pre><button class="copy">Copy</button><code>kubectl get webapp demo -n "$LAB_NS" -o yaml
+kubectl get services -n "$LAB_NS"</code></pre>
+
+<p>The WebApp object is stored because the CRD exists. A Service is not created because no reconciler is watching <code>WebApp</code> resources.</p>
+
+<div class="callout ok"><b>Controller preview:</b> in the next module, the controller will read <code>spec.service</code>, create/update the Service, set an owner reference back to the WebApp when appropriate, and record information such as <code>status.serviceName</code>.</div>
+</div>
+
+<div class="lab">
+<h3>Lab 5 — Observe generation and status separation</h3>
+<p>First inspect <code>metadata.generation</code>:</p>
+<pre><button class="copy">Copy</button><code>kubectl get webapp demo -n "$LAB_NS" \
+  -o jsonpath='generation={.metadata.generation}{"\n"}status={.status}{"\n"}'
+
+kubectl patch webapp demo -n "$LAB_NS" --type=merge \
+  -p '{"spec":{"replicas":4}}'
+
+kubectl get webapp demo -n "$LAB_NS" \
+  -o jsonpath='generation={.metadata.generation}{"\n"}spec.replicas={.spec.replicas}{"\n"}'</code></pre>
+<p>Changing <code>spec</code> increments generation. In a real controller, reconciliation would eventually report that generation through <code>status.observedGeneration</code>.</p>
+<div class="callout"><b>Status note:</b> this lab intentionally does not pretend that a human is a controller. If you experiment with updating <code>/status</code>, use subresource-aware tooling and understand the RBAC implications. The conceptual requirement is that users own desired state while controllers report observed state.</div>
+</div>
+
+<div class="lab">
+<h3>Lab 6 — Inspect API discovery and raw REST paths</h3>
+<pre><button class="copy">Copy</button><code>kubectl get --raw "/apis/$API_GROUP/$API_VERSION" | head
+kubectl get --raw "/apis/$API_GROUP/$API_VERSION/namespaces/$LAB_NS/webapps" | head
+
+kubectl api-resources --api-group="$API_GROUP"
+kubectl get webapps -A</code></pre>
+<p>This exposes the key idea: the CRD has registered a normal Kubernetes-style REST resource under <code>/apis/&lt;group&gt;/&lt;version&gt;/…</code>.</p>
+</div>
+
+<div class="lab">
+<h3>Lab 7 — RBAC test without changing your identity</h3>
+<pre><button class="copy">Copy</button><code>kubectl auth can-i get webapps.platform.gnugroup.org -n "$LAB_NS"
+kubectl auth can-i create webapps.platform.gnugroup.org -n "$LAB_NS"
+kubectl auth can-i update webapps.platform.gnugroup.org --subresource=status -n "$LAB_NS"</code></pre>
+<p>On real multi-user clusters, test intended user/service-account permissions with the administrator-approved impersonation workflow rather than assuming access.</p>
+</div>
+
+<div class="lab">
+<h3>Lab 8 — Safe cleanup</h3>
+<pre><button class="copy">Copy</button><code>kubectl delete namespace "$LAB_NS"
+kubectl delete crd "$CRD"</code></pre>
+<div class="callout bad"><b>Important:</b> deleting a CRD uninstalls its REST endpoint and causes the custom resources stored under that CRD to be deleted. Recreating the same CRD later does not restore those objects. Treat CRD deletion as a destructive API/data lifecycle operation outside disposable labs.</div>
+</div>
+</section>
+
+<section id="troubleshooting" data-title="Troubleshooting">
+<h2>11. Troubleshooting decision guide</h2>
+<table><thead><tr><th>Symptom</th><th>Likely layer</th><th>Checks</th></tr></thead><tbody>
+<tr><td><code>no matches for kind "WebApp"</code></td><td>Discovery / CRD not installed / wrong group-version</td><td><code>kubectl get crd</code>, <code>kubectl api-resources</code>, compare <code>apiVersion</code> and <code>kind</code>.</td></tr>
+<tr><td>CR rejected with schema errors</td><td>OpenAPI validation</td><td>Read paths in error; <code>kubectl explain</code>; compare enum/ranges/required fields.</td></tr>
+<tr><td>CR exists, but nothing happens</td><td>No controller or controller failure</td><td>This is expected for CRD-only labs. In operator systems, inspect controller Deployment/logs/events/RBAC.</td></tr>
+<tr><td>Controller forbidden</td><td>RBAC</td><td>Check verbs for main resource, <code>/status</code>, owned resources and finalizers-related updates.</td></tr>
+<tr><td>Object stuck terminating</td><td>Finalizer</td><td>Inspect <code>metadata.finalizers</code>, deletion timestamp and responsible controller logs.</td></tr>
+<tr><td>Version reads fail</td><td>Serving/conversion</td><td>Check <code>served</code>, storage version, webhook Service/endpoints/TLS/CA and conversion logs.</td></tr>
+<tr><td>Field disappears after create</td><td>Schema pruning</td><td>Check whether the field is declared in the structural schema.</td></tr>
+</tbody></table>
+
+<details><summary>Fast diagnostic command pack</summary><div>
+<pre><button class="copy">Copy</button><code>kubectl get crd
+kubectl get crd webapps.platform.gnugroup.org -o yaml
+kubectl api-resources --api-group=platform.gnugroup.org
+kubectl api-versions | grep platform.gnugroup.org
+kubectl explain webapp --recursive
+kubectl get webapps -A -o wide
+kubectl get events -A --sort-by=.lastTimestamp
+kubectl auth can-i --list -n crd-lab</code></pre>
+</div></details>
+</section>
+
+<section id="design" data-title="Production design">
+<h2>12. Production API design checklist</h2>
+<div class="grid">
+<div class="card"><b>API ownership</b><br>Use a stable domain/group and documented owner. Treat the CRD like a product API.</div>
+<div class="card"><b>Scope</b><br>Namespaced by default when tenant ownership is meaningful; Cluster only when conceptually global.</div>
+<div class="card"><b>Schema first</b><br>Validate required fields, ranges, enums and cross-field invariants.</div>
+<div class="card"><b>Status contract</b><br>Use observedGeneration and conditions; expose useful observed facts such as ready replica count or the managed Service name rather than echoing the entire spec.</div>
+<div class="card"><b>Idempotent controller</b><br>Reconciliation must safely repeat. Events may be duplicated and order is not a transaction log.</div>
+<div class="card"><b>Ownership</b><br>Use owner references where garbage collection semantics are appropriate; use finalizers for external cleanup.</div>
+<div class="card"><b>Version discipline</b><br>Plan backward compatibility, deprecation, conversion and storage migration before changing schemas.</div>
+<div class="card"><b>API server storage</b><br>Do not use CRDs as a generic application database, monitoring store or high-volume event stream.</div>
+<div class="card"><b>Security</b><br>Least-privilege controller RBAC; separate human and controller permissions; audit mutations.</div>
+<div class="card"><b>Observability</b><br>Controller metrics, reconciliation errors, work-queue behavior, conditions, Kubernetes Events and structured logs.</div>
+</div>
+
+<h3>When a CRD is a good fit</h3>
+<p>Use a CRD when the object is naturally part of cluster desired state, benefits from Kubernetes API conventions, should be watched/reconciled, and can use Kubernetes storage semantics. Avoid CRDs as general-purpose application data stores, high-write telemetry stores, or as a substitute for a domain database.</p>
+
+<h3>Design smell: “giant spec”</h3>
+<p>If one CRD contains dozens of unrelated subsystems, unbounded free-form maps and deeply coupled state machines, consider decomposing the API. Good Kubernetes APIs tend to expose cohesive resources with clear ownership.</p>
+</section>
+
+<section id="assessment" data-title="Knowledge check">
+<h2>13. Knowledge check</h2>
+<div class="quiz">
+<details><summary>1. Does installing a CRD automatically create a controller?</summary><div class="answer"><b>No.</b> It registers a custom API type. Behavior requires a controller/operator or other external actor.</div></details>
+<details><summary>2. Why is exactly one CRD version marked <code>storage: true</code>?</summary><div class="answer">Kubernetes needs a canonical persisted representation for the custom resource in storage.</div></details>
+<details><summary>3. What is the difference between <code>served</code> and <code>storage</code>?</summary><div class="answer"><code>served</code> controls client availability of a version. <code>storage</code> identifies the version persisted by the API server.</div></details>
+<details><summary>4. Why separate <code>spec</code> and <code>status</code>?</summary><div class="answer"><code>spec</code> expresses desired state; <code>status</code> reports observed state. The status subresource helps enforce that ownership separation.</div></details>
+<details><summary>5. Why can a deleted CR remain in Terminating?</summary><div class="answer">A finalizer can block removal until its responsible controller completes cleanup and removes the finalizer.</div></details>
+<details><summary>6. What should you check when a field vanishes after applying a custom resource?</summary><div class="answer">Whether that field exists in the CRD structural schema; undeclared fields can be pruned.</div></details>
+<details><summary>7. When is a conversion webhook needed?</summary><div class="answer">When different served versions require semantic field/data transformation rather than a simple version-label change.</div></details>
+<details><summary>8. Why should you not store routine application records in CRDs?</summary><div class="answer">They consume Kubernetes API/etcd capacity and couple normal application data-plane operation to the control-plane API.</div></details>
+</div>
+</section>
+
+<section id="cheatsheet" data-title="Command cheat sheet">
+<h2>14. CRD command cheat sheet</h2>
+<pre><button class="copy">Copy</button><code># Discover
+kubectl get crd
+kubectl api-resources
+kubectl api-versions
+kubectl explain &lt;kind&gt;
+kubectl explain &lt;kind&gt;.spec --recursive
+
+# Inspect
+kubectl get crd &lt;crd-name&gt; -o yaml
+kubectl describe crd &lt;crd-name&gt;
+kubectl get &lt;resource&gt; -A
+kubectl get &lt;resource&gt; &lt;name&gt; -n &lt;ns&gt; -o yaml
+
+# Authorization
+kubectl auth can-i get &lt;resource&gt;.&lt;group&gt; -n &lt;ns&gt;
+kubectl auth can-i update &lt;resource&gt;.&lt;group&gt; --subresource=status -n &lt;ns&gt;
+
+# Raw API
+kubectl get --raw /apis/&lt;group&gt;/&lt;version&gt;
+kubectl get --raw /apis/&lt;group&gt;/&lt;version&gt;/namespaces/&lt;ns&gt;/&lt;plural&gt;
+
+# Apply / validate
+kubectl apply -f crd.yaml
+kubectl wait --for=condition=Established crd/&lt;crd-name&gt; --timeout=60s
+kubectl apply --dry-run=server -f custom-resource.yaml
+
+# Remove (destructive outside labs)
+kubectl delete crd &lt;crd-name&gt;</code></pre>
+</section>
+
+<section id="next" data-title="What comes next">
+<h2>15. What comes next?</h2>
+<p>Once the CRD is understood, the natural next module is <b>Controllers and Operators</b>: informers/watches, work queues, reconciliation loops, owner references, status/conditions, finalizers, idempotency, leader election, controller-runtime/Kubebuilder, RBAC generation, testing, failure recovery and packaging.</p>
+<div class="grid">
+<div class="card"><b>Next lab 1</b><br>Write a minimal controller that watches <code>WebApp</code>, creates a Deployment, and translates <code>spec.service</code> into a managed Kubernetes Service.</div>
+<div class="card"><b>Next lab 2</b><br>Update <code>status.conditions</code>, <code>status.observedGeneration</code> and readiness state.</div>
+<div class="card"><b>Next lab 3</b><br>Add a finalizer for cleanup and prove idempotent reconciliation.</div>
+<div class="card"><b>Next lab 4</b><br>Evolve <code>v1alpha1</code> to <code>v1beta1</code> and introduce a conversion strategy.</div>
+</div>
+
+<h3>Reference anchors</h3>
+<p class="small">Verified against current upstream Kubernetes documentation during preparation of this module: Kubernetes “Extending the Kubernetes API”, “Custom Resources”, “Extend the Kubernetes API with CustomResourceDefinitions”, the CustomResourceDefinition API reference, and CRD versioning/conversion documentation. URLs are provided as ordinary links for further reading; the training file itself has no runtime dependency on them.</p>
+<ul>
+<li><a href="https://kubernetes.io/docs/concepts/extend-kubernetes/api-extension/" target="_blank" rel="noopener">Extending the Kubernetes API</a></li>
+<li><a href="https://kubernetes.io/docs/concepts/extend-kubernetes/api-extension/custom-resources/" target="_blank" rel="noopener">Custom Resources</a></li>
+<li><a href="https://kubernetes.io/docs/tasks/extend-kubernetes/custom-resources/custom-resource-definitions/" target="_blank" rel="noopener">CustomResourceDefinitions task guide</a></li>
+<li><a href="https://kubernetes.io/docs/tasks/extend-kubernetes/custom-resources/custom-resource-definition-versioning/" target="_blank" rel="noopener">CRD versioning and conversion</a></li>
+<li><a href="https://kubernetes.io/docs/reference/kubernetes-api/apiextensions/custom-resource-definition-v1/" target="_blank" rel="noopener">CustomResourceDefinition v1 API reference</a></li>
+</ul>
+</section>
+
+<footer>
+<b>Kubernetes CRD Self‑Study Field Guide v1.2 — Verified + Commented Lab 1</b><br>
+Designed for trainees with working Kubernetes knowledge. All diagrams, styles and JavaScript are embedded in this file.
+</footer>
+</main>
+</div>
+
+<script>
+const root=document.documentElement;
+const saved=localStorage.getItem('crd-theme');
+if(saved) root.dataset.theme=saved;
+document.getElementById('themeBtn').onclick=()=>{
+  root.dataset.theme=root.dataset.theme==='light'?'dark':'light';
+  localStorage.setItem('crd-theme',root.dataset.theme);
+};
+
+document.querySelectorAll('pre').forEach(pre=>{
+  const b=pre.querySelector('.copy'); if(!b) return;
+  b.onclick=async()=>{
+    const code=pre.querySelector('code').innerText;
+    try{await navigator.clipboard.writeText(code);b.textContent='Copied';b.classList.add('ok');setTimeout(()=>{b.textContent='Copy';b.classList.remove('ok')},1200)}
+    catch(e){b.textContent='Select & copy'}
+  };
+});
+
+document.querySelectorAll('[data-tabs]').forEach(t=>{
+  const btns=[...t.querySelectorAll('.tabbar button')];
+  const panes=[...t.querySelectorAll('.tabpane')];
+  btns.forEach((b,i)=>b.onclick=()=>{
+    btns.forEach(x=>x.classList.remove('active'));panes.forEach(x=>x.classList.remove('active'));
+    b.classList.add('active');panes[i].classList.add('active');
+  });
+});
+
+const sections=[...document.querySelectorAll('main section[id]')];
+const links=[...document.querySelectorAll('#nav a')];
+const obs=new IntersectionObserver(entries=>{
+  entries.filter(e=>e.isIntersecting).sort((a,b)=>b.intersectionRatio-a.intersectionRatio).slice(0,1).forEach(e=>{
+    links.forEach(a=>a.classList.toggle('active',a.getAttribute('href')==='#'+e.target.id));
+  });
+},{rootMargin:'-20% 0px -65% 0px',threshold:[0,.1,.5]});
+sections.forEach(s=>obs.observe(s));
+
+window.addEventListener('scroll',()=>{
+  const h=document.documentElement;
+  const p=100*h.scrollTop/(h.scrollHeight-h.clientHeight);
+  document.getElementById('progress').style.width=p+'%';
+});
+
+document.getElementById('filter').addEventListener('input',e=>{
+  const q=e.target.value.toLowerCase().trim();
+  links.forEach(a=>{
+    const s=document.querySelector(a.getAttribute('href'));
+    const match=!q || (a.textContent+' '+(s?.innerText||'')).toLowerCase().includes(q);
+    a.style.display=match?'block':'none';
+  });
+});
+</script>
+</body>
+</html>
